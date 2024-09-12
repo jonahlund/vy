@@ -1,8 +1,8 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use tiny_rsx::fmt::Formatter;
+use tiny_rsx::Formatter;
 
-use crate::{LazyInput, RenderInput, WriteInput};
+use crate::{LazyInput, WriteInput};
 
 pub(crate) fn lazy(input: LazyInput) -> TokenStream {
     let mut text = String::new();
@@ -15,7 +15,7 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
 
     if args.is_empty() {
         return quote! {
-            ::vy::PreEscaped(#text)
+            ::vyu::PreEscaped(#text)
         };
     }
 
@@ -28,12 +28,13 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
         &text,
         args.iter().zip(pats.clone()).map(|((i, _), pat)| (*i, pat)),
     );
-    let size_hint = input.size_hint;
 
     quote!(match (#(#vals),*) {
-        (#(#pats),*) => move |__buf: &mut String| {
-            __buf.reserve(#size_hint);
-            #(#stmts);*
+        (#(#pats),*) => {
+            #[inline(always)]
+            move |__buf: &mut String| {
+                #(#stmts);*
+            }
         }
     })
 }
@@ -48,30 +49,10 @@ pub(crate) fn write(input: WriteInput) -> TokenStream {
     }
 
     let stmts = expand_statements(&text, args.into_iter());
-    let size_hint = input.size_hint;
     let buffer = input.buffer;
 
     quote!({
         let __buf: &mut String = #buffer;
-        __buf.reserve(#size_hint);
-        #(#stmts);*
-    })
-}
-
-pub(crate) fn render(input: RenderInput) -> TokenStream {
-    let mut text = String::new();
-    let mut args = Vec::new();
-
-    let mut formatter = Formatter::new(&mut text, &mut args);
-    for n in &input.nodes {
-        let _ = formatter.write_node(n);
-    }
-
-    let stmts = expand_statements(&text, args.into_iter());
-    let size_hint = input.size_hint;
-
-    quote!({
-        let __buf = &mut String::with_capacity(#size_hint);
         #(#stmts);*
     })
 }
@@ -88,7 +69,7 @@ fn expand_statements<T: ToTokens>(
 
     fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
         quote! {
-            ::vy::Render::render_to(#v, __buf);
+            ::vyu::Render::render_to(#v, __buf);
         }
     }
 

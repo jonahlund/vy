@@ -6,7 +6,6 @@ mod expand;
 mod parse;
 
 pub(crate) struct LazyInput {
-    size_hint: usize,
     nodes: Vec<ast::Node>,
 }
 
@@ -19,7 +18,6 @@ pub fn lazy(input: TokenStream) -> TokenStream {
 
 pub(crate) struct WriteInput {
     buffer: syn::Expr,
-    size_hint: usize,
     nodes: Vec<ast::Node>,
 }
 
@@ -28,16 +26,4 @@ pub fn write(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as WriteInput);
 
     expand::write(input).into()
-}
-
-pub(crate) struct RenderInput {
-    size_hint: usize,
-    nodes: Vec<ast::Node>,
-}
-
-#[proc_macro]
-pub fn render(input: TokenStream) -> TokenStream {
-    let input = parse_macro_input!(input as RenderInput);
-
-    expand::render(input).into()
 }

@@ -1,5 +1,5 @@
 [package]
-name = "vy-macros"
+name = "vyu-macros"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,7 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
-tiny-rsx = { version = "0.2.0", path = "../../tiny-rsx" }
+tiny-rsx.path = "/home/jlund/Code/tiny-rsx"
 proc-macro2 = "1"
 quote = "1"
 syn = "2"

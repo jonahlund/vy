@@ -3,23 +3,6 @@ use core::fmt::Write as _;
 
 use crate::Render;
 
-/// Escapes all special HTML characters in `input` and returns the result.
-///
-/// The following characters are escaped:
-///
-///   '&' -> `&amp;`
-///   '<' -> `&lt;`
-///   '>' -> `&gt;`
-///   '"' -> `&quot;`
-///
-/// All other characters remain unchanged.
-#[inline]
-pub fn escape(input: &str) -> String {
-    let mut buf = String::with_capacity(input.len());
-    escape_into(input, &mut buf);
-    buf
-}
-
 /// Escapes all special HTML characters in `input` and writes the result into
 /// `buf`.
 #[inline]

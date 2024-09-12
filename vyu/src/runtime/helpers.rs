@@ -1,10 +1,10 @@
-macro_rules! via_itoa {
+macro_rules! via_itoap {
     ($($ty:ty)*) => {
         $(
             impl $crate::Render for $ty {
                 #[inline]
                 fn render_to(self, buf: &mut String) {
-                    buf.push_str(itoa::Buffer::new().format(self));
+                    itoap::write_to_string(buf, self)
                 }
             }
         )*
