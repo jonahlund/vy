@@ -1,6 +1,5 @@
 #[macro_use]
 mod helpers;
-mod buffer;
 mod escape;
 mod size_hint;
 
