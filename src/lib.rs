@@ -3,7 +3,7 @@
 #![cfg_attr(not(feature = "std"), no_std)]
 
 extern crate alloc;
-extern crate self as vyu;
+extern crate self as vy;
 
 pub mod runtime;
 pub use runtime::{PreEscaped, Render};
@@ -18,27 +18,27 @@ pub use runtime::{PreEscaped, Render};
 /// # Example
 ///
 /// ```
-/// fn button(label: impl vyu::Render) -> impl vyu::Render {
-///     vyu::lazy! {
+/// fn button(label: impl vy::Render) -> impl vy::Render {
+///     vy::lazy! {
 ///         <button>{label}</button>
 ///     }
 /// }
 /// ```
 #[doc(inline)]
-pub use vyu_macros::lazy;
+pub use vy_macros::lazy;
 /// Writes HTML to a [`String`].
 ///
 /// This macro eagerly writes HTML to a [`String`].
 #[doc(inline)]
-pub use vyu_macros::write;
+pub use vy_macros::write;
 
 /// Render HTML to a [`String`].
 ///
-/// This is a convenience macro over `vyu::lazy!().render()`.
+/// This is a convenience macro over `vy::lazy!().render()`.
 #[macro_export]
 macro_rules! render {
     ($($arg:tt)*) => {
-        vyu::Render::render(vyu::lazy!($($arg)*))
+        vy::Render::render(vy::lazy!($($arg)*))
     };
 }
 
@@ -48,9 +48,9 @@ mod tests {
 
     #[test]
     fn simple_tags() {
-        assert_eq!(vyu::render!(<foo></foo>), "<foo></foo>");
+        assert_eq!(vy::render!(<foo></foo>), "<foo></foo>");
         assert_eq!(
-            vyu::render!(<foo></foo><bar></bar>),
+            vy::render!(<foo></foo><bar></bar>),
             "<foo></foo><bar></bar>"
         );
     }
@@ -58,11 +58,11 @@ mod tests {
     #[test]
     fn simple_tags_with_attributes() {
         assert_eq!(
-            vyu::render!(<foo bar="baz"></foo>),
+            vy::render!(<foo bar="baz"></foo>),
             "<foo bar=\"baz\"></foo>"
         );
         assert_eq!(
-            vyu::render!(<foo bar="baz" qux={false}></foo>),
+            vy::render!(<foo bar="baz" qux={false}></foo>),
             "<foo bar=\"baz\" qux=\"false\"></foo>"
         );
     }
@@ -70,18 +70,18 @@ mod tests {
     #[test]
     fn nested_tags() {
         assert_eq!(
-            vyu::render!(<foo><bar></bar></foo>),
+            vy::render!(<foo><bar></bar></foo>),
             "<foo><bar></bar></foo>"
         );
         assert_eq!(
-            vyu::render!(<foo><bar><baz></baz></bar></foo><qux></qux>),
+            vy::render!(<foo><bar><baz></baz></bar></foo><qux></qux>),
             "<foo><bar><baz></baz></bar></foo><qux></qux>"
         );
     }
 
     #[test]
     fn self_closing_tags() {
-        assert_eq!(vyu::render!(<foo />), "<foo>");
-        assert_eq!(vyu::render!(<foo /><bar />), "<foo><bar>");
+        assert_eq!(vy::render!(<foo />), "<foo>");
+        assert_eq!(vy::render!(<foo /><bar />), "<foo><bar>");
     }
 }

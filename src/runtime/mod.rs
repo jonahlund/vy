@@ -20,11 +20,11 @@ pub use size_hint::*;
 /// ```
 /// struct AppleCount(i32);
 ///
-/// impl vyu::Render for AppleCount {
+/// impl vy::Render for AppleCount {
 ///     fn render_to(self, buf: &mut String) {
 ///         let suffix = if self.0 != 1 { "s" } else { "" };
 ///         
-///         vyu::write!(buf,
+///         vy::write!(buf,
 ///             <p>"You have "{self.0}" apple"{suffix}"!"<p>
 ///         )
 ///     }

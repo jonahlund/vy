@@ -15,7 +15,7 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
 
     if args.is_empty() {
         return quote! {
-            ::vyu::PreEscaped(#text)
+            ::vy::PreEscaped(#text)
         };
     }
 
@@ -69,7 +69,7 @@ fn expand_statements<T: ToTokens>(
 
     fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
         quote! {
-            ::vyu::Render::render_to(#v, __buf)
+            ::vy::Render::render_to(#v, __buf)
         }
     }
 
