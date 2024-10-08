@@ -69,7 +69,7 @@ fn expand_statements<T: ToTokens>(
 
     fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
         quote! {
-            ::vyu::Render::render_to(#v, __buf);
+            ::vyu::Render::render_to(#v, __buf)
         }
     }
 
