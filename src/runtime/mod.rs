@@ -1,12 +1,10 @@
 #[macro_use]
 mod helpers;
 mod escape;
-mod size_hint;
 
 use alloc::string::String;
 
 pub use escape::*;
-pub use size_hint::*;
 
 /// A type that can be rendered to a [`String`].
 ///
@@ -37,10 +35,8 @@ pub trait Render {
     where
         Self: Sized,
     {
-        static SIZE_HINT: SizeHint = SizeHint::new(0);
-        let mut buf = String::with_capacity(SIZE_HINT.get());
+        let mut buf = String::new();
         self.render_to(&mut buf);
-        SIZE_HINT.update(buf.len());
         buf
     }
 }
