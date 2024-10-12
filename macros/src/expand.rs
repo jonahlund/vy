@@ -28,11 +28,13 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
         &text,
         args.iter().zip(pats.clone()).map(|((i, _), pat)| (*i, pat)),
     );
+    let size_hint = input.size_hint;
 
     quote!(match (#(#vals),*) {
         (#(#pats),*) => {
             #[inline(always)]
             move |__buf: &mut String| {
+                __buf.reserve(#size_hint);
                 #(#stmts);*
             }
         }
@@ -50,9 +52,11 @@ pub(crate) fn write(input: WriteInput) -> TokenStream {
 
     let stmts = expand_statements(&text, args.into_iter());
     let buffer = input.buffer;
+    let size_hint = input.size_hint;
 
     quote!({
         let __buf: &mut String = #buffer;
+        __buf.reserve(#size_hint);
         #(#stmts);*
     })
 }
