@@ -1,9 +1,9 @@
 # vy
 
-[<img alt="github" src="https://img.shields.io/badge/github-jonahlund/vy-8da0cb?style=for-the-badge&logo=github">](https://github.com/jonahlund/vy)
-[<img alt="crates.io" src="https://img.shields.io/crates/v/vy.svg?style=for-the-badge&logo=rust">](https://crates.io/crates/vy)
-[<img alt="docs.rs" src="https://img.shields.io/badge/docs.rs-vy-66c2a5?style=for-the-badge&logo=docs.rs">](https://docs.rs/vy)
-[<img alt="build status" src="https://img.shields.io/github/actions/workflow/status/jonahlund/vy/ci.yml?branch=main&style=for-the-badge">](https://github.com/jonahlund/vy/actions?query=branch%3Amain)
+[![crates.io](https://img.shields.io/crates/v/vy.svg)](https://crates.io/crates/vy)
+[![docs.rs](https://docs.rs/vy/badge.svg)](https://docs.rs/vy)
+![build](https://github.com/jonahlund/vy/workflows/ci/badge.svg)
+![license: MIT](https://img.shields.io/crates/l/vy.svg)
 
 Fast and minimal HTML templating macros for Rust.
 
