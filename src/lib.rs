@@ -30,7 +30,7 @@ pub use vy_macros::lazy;
 #[doc(inline)]
 pub use vy_macros::write;
 
-/// Renders HTML to a [`String`].
+/// Creates a [`String`] with the HTML content.
 ///
 /// This is a convenience macro over `vy::lazy!(..).render()`.
 #[macro_export]
