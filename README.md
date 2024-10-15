@@ -5,7 +5,7 @@
 ![build](https://github.com/jonahlund/vy/actions/workflows/ci.yml/badge.svg)
 ![license: MIT](https://img.shields.io/crates/l/vy.svg)
 
-Fast and minimal HTML templating macros for Rust.
+Fast and minimal HTML templating macros in Rust.
 
 ## Usage
 
