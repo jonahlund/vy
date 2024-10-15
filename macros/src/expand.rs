@@ -1,19 +1,18 @@
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote, ToTokens};
-use tiny_rsx::Formatter;
 
-use crate::{LazyInput, WriteInput};
+use crate::{fmt::Formatter, LazyInput, WriteInput};
 
 pub(crate) fn lazy(input: LazyInput) -> TokenStream {
     let mut text = String::new();
     let mut args = Vec::new();
+    let mut fmt = Formatter::new(&mut text, &mut args);
 
-    let mut formatter = Formatter::new(&mut text, &mut args);
-    for n in &input.nodes {
-        let _ = formatter.write_node(n);
+    for node in &input.nodes {
+        let _ = fmt.write_node(node);
     }
 
-    if args.is_empty() {
+    if fmt.args.is_empty() {
         return quote! {
             ::vy::PreEscaped(#text)
         };
@@ -24,7 +23,7 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
         .iter()
         .enumerate()
         .map(|(i, _)| format_ident!("__arg{i}"));
-    let stmts = expand_statements(
+    let stmts = expand_stmts(
         &text,
         args.iter().zip(pats.clone()).map(|((i, _), pat)| (*i, pat)),
     );
@@ -44,13 +43,13 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
 pub(crate) fn write(input: WriteInput) -> TokenStream {
     let mut text = String::new();
     let mut args = Vec::new();
+    let mut fmt = Formatter::new(&mut text, &mut args);
 
-    let mut formatter = Formatter::new(&mut text, &mut args);
-    for n in &input.nodes {
-        let _ = formatter.write_node(n);
+    for node in &input.nodes {
+        let _ = fmt.write_node(node);
     }
 
-    let stmts = expand_statements(&text, args.into_iter());
+    let stmts = expand_stmts(&text, args.into_iter());
     let buffer = input.buffer;
     let size_hint = input.size_hint;
 
@@ -61,24 +60,12 @@ pub(crate) fn write(input: WriteInput) -> TokenStream {
     })
 }
 
-fn expand_statements<T: ToTokens>(
+fn expand_stmts<T: ToTokens>(
     text: &str,
     args: impl Iterator<Item = (usize, T)>,
 ) -> Vec<TokenStream> {
-    fn expand_str(s: &str) -> TokenStream {
-        quote! {
-            __buf.push_str(#s)
-        }
-    }
-
-    fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
-        quote! {
-            ::vy::Render::render_to(#v, __buf)
-        }
-    }
-
     let mut stmts = Vec::with_capacity(args.size_hint().0.saturating_mul(2));
-    let mut cursor = 0usize;
+    let mut cursor = 0;
 
     for (i, arg) in args {
         if i != cursor {
@@ -93,4 +80,16 @@ fn expand_statements<T: ToTokens>(
     }
 
     stmts
+}
+
+fn expand_str(s: &str) -> TokenStream {
+    quote! {
+        __buf.push_str(#s)
+    }
+}
+
+fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
+    quote! {
+        ::vy::Render::render_to(#v, __buf)
+    }
 }

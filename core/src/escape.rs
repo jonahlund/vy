@@ -37,6 +37,7 @@ impl Render for PreEscaped<String> {
 }
 
 impl Render for PreEscaped<core::fmt::Arguments<'_>> {
+    #[inline]
     fn render_to(self, buf: &mut String) {
         let _ = buf.write_fmt(self.0);
     }

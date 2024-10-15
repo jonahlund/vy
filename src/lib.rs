@@ -1,17 +1,15 @@
-//! Fast and minimal HTML macros in Rust.
+//! Fast and minimal HTML templating macros.
 
 #![cfg_attr(not(feature = "std"), no_std)]
 
-extern crate alloc;
 extern crate self as vy;
 
-pub mod runtime;
-pub use runtime::{PreEscaped, Render};
-/// Lazily write HTML.
+pub use vy_core::{PreEscaped, Render};
+/// Creates a renderable type.
 ///
 /// This avoids allocating until [`render`] is called, which makes it
 /// suitable to use whenever you are simply passing along the result for
-/// further formatting.
+/// further rendering.
 ///
 /// [`render`]: crate::Render
 ///
@@ -32,9 +30,9 @@ pub use vy_macros::lazy;
 #[doc(inline)]
 pub use vy_macros::write;
 
-/// Render HTML to a [`String`].
+/// Renders HTML to a [`String`].
 ///
-/// This is a convenience macro over `vy::lazy!().render()`.
+/// This is a convenience macro over `vy::lazy!(..).render()`.
 #[macro_export]
 macro_rules! render {
     ($($arg:tt)*) => {
@@ -44,8 +42,6 @@ macro_rules! render {
 
 #[cfg(test)]
 mod tests {
-    use alloc::string::String;
-
     #[test]
     fn simple_tags() {
         assert_eq!(vy::render!(<foo></foo>), "<foo></foo>");

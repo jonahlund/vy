@@ -1,17 +1,18 @@
 use syn::parse::{Parse, ParseStream};
-use tiny_rsx::Parser;
+use tiny_rsx::ast::NodeTree;
 
 use crate::{LazyInput, WriteInput};
 
 impl Parse for LazyInput {
     fn parse(input: ParseStream) -> syn::Result<Self> {
-        let size_hint = input.to_string().len();
-        let mut nodes = Vec::new();
-        let parser = Parser::new();
-        while !input.is_empty() {
-            nodes.push(parser.parse_node(input)?);
-        }
-        Ok(Self { nodes, size_hint })
+        let mut input_str = input.to_string();
+        input_str.retain(|s| !s.is_whitespace());
+        let size_hint = input_str.len();
+
+        Ok(Self {
+            nodes: NodeTree::parse(input)?.nodes,
+            size_hint,
+        })
     }
 }
 

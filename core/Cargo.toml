@@ -1,5 +1,5 @@
 [package]
-name = "vy-macros"
+name = "vy-core"
 version = "0.1.0"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
@@ -7,12 +7,10 @@ repository = "https://github.com/JonahLund/vy"
 license = "MIT"
 rust-version = "1.70"
 
-[lib]
-proc-macro = true
-
 [dependencies]
-vy-core = { version = "0.1.0", path = "../core" }
-tiny-rsx = "0.3.0"
-proc-macro2 = "1"
-quote = "1"
-syn = "2"
+itoap = "1.0.1"
+ryu = "1.0.18"
+
+[features]
+default = ["std"]
+std = []

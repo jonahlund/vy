@@ -3,10 +3,11 @@ use syn::parse_macro_input;
 use tiny_rsx::ast;
 
 mod expand;
+mod fmt;
 mod parse;
 
 pub(crate) struct LazyInput {
-    nodes: Vec<ast::Node>,
+    nodes: Box<[ast::Node]>,
     size_hint: usize,
 }
 
@@ -19,7 +20,7 @@ pub fn lazy(input: TokenStream) -> TokenStream {
 
 pub(crate) struct WriteInput {
     buffer: syn::Expr,
-    nodes: Vec<ast::Node>,
+    nodes: Box<[ast::Node]>,
     size_hint: usize,
 }
 
