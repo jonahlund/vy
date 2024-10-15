@@ -2,7 +2,7 @@
 
 [![crates.io](https://img.shields.io/crates/v/vy.svg)](https://crates.io/crates/vy)
 [![docs.rs](https://docs.rs/vy/badge.svg)](https://docs.rs/vy)
-![build](https://github.com/jonahlund/vy/workflows/ci/badge.svg)
+![build](https://github.com/jonahlund/vy/actions/workflows/ci.yml/badge.svg)
 ![license: MIT](https://img.shields.io/crates/l/vy.svg)
 
 Fast and minimal HTML templating macros for Rust.
