@@ -72,7 +72,10 @@ impl<'a, 'b> Formatter<'a, 'b> {
     #[inline]
     pub fn write_value(&mut self, v: &'b ast::Value) -> Result {
         match v {
-            ast::Value::LitStr(lit_str) => self.write_str(&lit_str.value()),
+            ast::Value::LitStr(lit_str) => {
+                lit_str.value().render_to(self.buf);
+                Ok(())
+            }
             ast::Value::Expr(expr) => self.write_expr(expr),
         }
     }
