@@ -58,6 +58,13 @@ impl Render for &String {
     }
 }
 
+impl Render for Box<str> {
+    #[inline]
+    fn render_to(self, buf: &mut String) {
+        self.as_ref().render_to(buf);
+    }
+}
+
 impl Render for char {
     #[inline]
     fn render_to(self, buf: &mut String) {
