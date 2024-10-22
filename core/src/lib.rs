@@ -58,6 +58,7 @@ impl Render for &String {
     }
 }
 
+#[cfg(feature = "std")]
 impl Render for Box<str> {
     #[inline]
     fn render_to(self, buf: &mut String) {
