@@ -40,6 +40,51 @@ macro_rules! render {
     };
 }
 
+/// Inline script tag
+///
+/// # Usage
+/// ```
+/// let page = vy::render! {
+///    {vy::script!(
+///        console.log("Hello,");
+///        console.log("world!");
+///    )}
+/// };
+/// assert_eq!(
+///     page,
+///     r#"<script>console.log("Hello,"); console.log("world!");</script>"#
+/// );
+/// ```
+#[macro_export]
+macro_rules! script {
+    ($($t:tt)*) => {
+        vy::PreEscaped(concat!("<script>", stringify!($($t)*), "</script>"))
+    };
+}
+
+/// Inline style tag
+///
+/// # Usage
+///
+/// ```
+/// let page = vy::render! {
+///    {vy::style!(
+///        .red { color: red }
+///        .green { color: green }
+///    )}
+/// };
+/// assert_eq!(
+///     page,
+///     "<style>.red { color: red }.green { color: green }</style>"
+/// );
+/// ```
+#[macro_export]
+macro_rules! style {
+    ($($t:tt)*) => {
+        vy::PreEscaped(concat!("<style>", stringify!($($t)*), "</style>"))
+    };
+}
+
 #[cfg(test)]
 mod tests {
     #[test]
