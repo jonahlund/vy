@@ -9,7 +9,7 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
     let mut fmt = Formatter::new(&mut text, &mut args);
 
     for node in &input.nodes {
-        let _ = fmt.write_node(node);
+        fmt.write_node(node);
     }
 
     if fmt.args.is_empty() {
@@ -46,7 +46,7 @@ pub(crate) fn write(input: WriteInput) -> TokenStream {
     let mut fmt = Formatter::new(&mut text, &mut args);
 
     for node in &input.nodes {
-        let _ = fmt.write_node(node);
+        fmt.write_node(node);
     }
 
     let stmts = expand_stmts(&text, args.into_iter());

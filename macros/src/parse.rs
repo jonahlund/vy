@@ -41,7 +41,7 @@ impl Parse for LitInput {
         let mut fmt = Formatter::new(&mut text, &mut args);
 
         for node in &nodes {
-            let _ = fmt.write_node(node);
+            fmt.write_node(node);
         }
 
         if let Some((_, value)) = args.into_iter().next() {
