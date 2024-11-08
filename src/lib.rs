@@ -24,6 +24,11 @@ pub use vy_core::{PreEscaped, Render};
 /// ```
 #[doc(inline)]
 pub use vy_macros::lazy;
+/// Creates an HTML string literal.
+///
+/// Passing any non literal values will cause a compilation error.
+#[doc(inline)]
+pub use vy_macros::lit;
 /// Writes HTML to a [`String`].
 ///
 /// This macro eagerly writes HTML to a [`String`].
