@@ -126,8 +126,3 @@ impl<T: Render> Render for alloc::vec::IntoIter<T> {
         }
     }
 }
-
-impl Render for () {
-    #[inline]
-    fn render_to(self, _: &mut String) {}
-}
