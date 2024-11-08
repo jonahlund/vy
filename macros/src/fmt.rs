@@ -42,19 +42,19 @@ impl<'a, 'b> Formatter<'a, 'b> {
             if attrs.is_empty() {
                 match lit {
                     syn::Lit::Str(lit_str) => {
-                        lit_str.value().render_to(self.buf);
+                        return lit_str.value().render_to(self.buf);
                     }
                     syn::Lit::Char(lit_char) => {
-                        lit_char.value().render_to(self.buf);
+                        return lit_char.value().render_to(self.buf);
                     }
                     syn::Lit::Int(lit_int) => {
-                        lit_int.base10_digits().render_to(self.buf);
+                        return lit_int.base10_digits().render_to(self.buf);
                     }
                     syn::Lit::Float(lit_float) => {
-                        lit_float.base10_digits().render_to(self.buf);
+                        return lit_float.base10_digits().render_to(self.buf);
                     }
                     syn::Lit::Bool(lit_bool) => {
-                        lit_bool.value().render_to(self.buf);
+                        return lit_bool.value().render_to(self.buf);
                     }
                     _ => {}
                 }
