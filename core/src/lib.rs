@@ -2,32 +2,71 @@
 
 extern crate alloc;
 
-#[macro_use]
-mod helpers;
 mod escape;
+mod helpers;
 
 use alloc::string::String;
 
-pub use escape::*;
+pub use escape::{escape_into, PreEscaped};
+pub use helpers::{from_fn, FromFn};
 
-/// A type that can be rendered to a [`String`].
+/// A type that can be represented in HTML.
 ///
 /// Some types implementing this trait (`&str`, `char`) are escaped by default.
 /// To render types unescaped, use [`PreEscaped`].
 ///
 /// [`PreEscaped`]: crate::PreEscaped
-pub trait Render {
-    fn render_to(self, buf: &mut String);
+pub trait ToHtml {
+    fn to_html(&self, buf: &mut String);
 
     #[inline]
-    fn render(self) -> String
+    fn to_string(&self) -> String
     where
         Self: Sized,
     {
         let mut buf = String::new();
-        self.render_to(&mut buf);
+        self.to_html(&mut buf);
         buf
     }
+}
+
+impl<T: ToHtml + ?Sized> ToHtml for &T {
+    #[inline]
+    fn to_html(&self, buf: &mut String) {
+        T::to_html(&**self, buf)
+    }
+}
+
+impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
+    fn to_html(&self, buf: &mut String) {
+        T::to_html(&**self, buf);
+    }
+}
+
+macro_rules! via_itoap {
+    ($($ty:ty)*) => {
+        $(
+            impl $crate::ToHtml for $ty {
+                #[inline]
+                fn to_html(&self, buf: &mut String) {
+                    itoap::write_to_string(buf, *self)
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! via_ryu {
+    ($($ty:ty)*) => {
+        $(
+            impl $crate::ToHtml for $ty {
+                #[inline]
+                fn to_html(&self, buf: &mut String) {
+                    buf.push_str(ryu::Buffer::new().format(*self));
+                }
+            }
+        )*
+    };
 }
 
 via_itoap! {
@@ -37,92 +76,78 @@ via_itoap! {
 
 via_ryu! { f32 f64 }
 
-impl Render for &str {
+impl ToHtml for str {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         escape_into(self, buf)
     }
 }
 
-impl Render for String {
+impl ToHtml for String {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_str().render_to(buf)
+    fn to_html(&self, buf: &mut String) {
+        self.as_str().to_html(buf)
     }
 }
 
-impl Render for &String {
+impl ToHtml for char {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_str().render_to(buf)
-    }
-}
-
-#[cfg(feature = "std")]
-impl Render for Box<str> {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_ref().render_to(buf);
-    }
-}
-
-impl Render for char {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         escape_into(self.encode_utf8(&mut [0; 4]), buf);
     }
 }
 
-impl Render for bool {
+impl ToHtml for bool {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        buf.push_str(if self { "true" } else { "false" })
+    fn to_html(&self, buf: &mut String) {
+        buf.push_str(if *self { "true" } else { "false" })
     }
 }
 
-impl<F: FnOnce(&mut String)> Render for F {
+impl<T: ToHtml> ToHtml for Option<T> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        (self)(buf)
-    }
-}
-
-impl<T: Render> Render for Option<T> {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         if let Some(x) = self {
-            x.render_to(buf)
+            x.to_html(buf)
         }
     }
 }
 
-impl<T: Render, const N: usize> Render for [T; N] {
+impl<T: ToHtml, const N: usize> ToHtml for [T; N] {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         for x in self {
-            x.render_to(buf)
+            x.to_html(buf)
         }
     }
 }
 
-impl<T, I: Iterator, F> Render for core::iter::Map<I, F>
-where
-    T: Render,
-    F: FnMut(I::Item) -> T,
-{
-    #[inline]
-    fn render_to(self, buf: &mut String) {
-        for x in self {
-            x.render_to(buf)
-        }
-    }
+macro_rules! impl_tuple {
+	((
+		$($i:ident,)+
+	)) => {
+		impl<$($i,)+> ToHtml for ($($i,)+)
+		where
+			$($i: ToHtml,)+
+		{
+			fn to_html(&self, buf: &mut String) {
+				#[allow(non_snake_case)]
+				let ($($i,)+) = self;
+				$(
+					$i.to_html(buf);
+				)+
+			}
+		}
+	};
+
+	($f:ident) => {
+		impl_tuple!(($f,));
+	};
+
+	($f:ident $($i:ident)+) => {
+		impl_tuple!(($f, $($i,)+));
+		impl_tuple!($($i)+);
+	};
 }
 
-impl<T: Render> Render for alloc::vec::IntoIter<T> {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
-        for x in self {
-            x.render_to(buf)
-        }
-    }
-}
+impl_tuple!(A B C D E F G H I J K);

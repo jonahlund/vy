@@ -4,7 +4,7 @@
 
 extern crate self as vy;
 
-pub use vy_core::{PreEscaped, Render};
+pub use vy_core::{from_fn, FromFn, PreEscaped, ToHtml};
 /// Creates a renderable type.
 ///
 /// This avoids allocating until [`render`] is called, which makes it
@@ -37,11 +37,11 @@ pub use vy_macros::write;
 
 /// Creates a [`String`] with the HTML content.
 ///
-/// This is a convenience macro over `vy::lazy!(..).render()`.
+/// This is a convenience macro over `vy::lazy!(..).to_string()`.
 #[macro_export]
-macro_rules! render {
+macro_rules! owned {
     ($($arg:tt)*) => {
-        vy::Render::render(vy::lazy!($($arg)*))
+        $crate::ToHtml::to_string(&vy::lazy!($($arg)*))
     };
 }
 
@@ -94,9 +94,9 @@ macro_rules! style {
 mod tests {
     #[test]
     fn simple_tags() {
-        assert_eq!(vy::render!(<foo></foo>), "<foo></foo>");
+        assert_eq!(vy::owned!(<foo></foo>), "<foo></foo>");
         assert_eq!(
-            vy::render!(<foo></foo><bar></bar>),
+            vy::owned!(<foo></foo><bar></bar>),
             "<foo></foo><bar></bar>"
         );
     }
@@ -104,11 +104,11 @@ mod tests {
     #[test]
     fn simple_tags_with_attributes() {
         assert_eq!(
-            vy::render!(<foo bar="baz"></foo>),
+            vy::owned!(<foo bar="baz"></foo>),
             "<foo bar=\"baz\"></foo>"
         );
         assert_eq!(
-            vy::render!(<foo bar="baz" qux={false}></foo>),
+            vy::owned!(<foo bar="baz" qux={false}></foo>),
             "<foo bar=\"baz\" qux=\"false\"></foo>"
         );
     }
@@ -116,18 +116,18 @@ mod tests {
     #[test]
     fn nested_tags() {
         assert_eq!(
-            vy::render!(<foo><bar></bar></foo>),
+            vy::owned!(<foo><bar></bar></foo>),
             "<foo><bar></bar></foo>"
         );
         assert_eq!(
-            vy::render!(<foo><bar><baz></baz></bar></foo><qux></qux>),
+            vy::owned!(<foo><bar><baz></baz></bar></foo><qux></qux>),
             "<foo><bar><baz></baz></bar></foo><qux></qux>"
         );
     }
 
     #[test]
     fn self_closing_tags() {
-        assert_eq!(vy::render!(<foo />), "<foo>");
-        assert_eq!(vy::render!(<foo /><bar />), "<foo><bar>");
+        assert_eq!(vy::owned!(<foo />), "<foo>");
+        assert_eq!(vy::owned!(<foo /><bar />), "<foo><bar>");
     }
 }

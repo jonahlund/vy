@@ -6,6 +6,7 @@ use crate::{fmt::Formatter, LazyInput, WriteInput};
 pub(crate) fn lazy(input: LazyInput) -> TokenStream {
     let mut text = String::new();
     let mut args = Vec::new();
+
     let mut fmt = Formatter::new(&mut text, &mut args);
 
     for node in &input.nodes {
@@ -31,11 +32,10 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
 
     quote!(match (#(#vals),*) {
         (#(#pats),*) => {
-            #[inline(always)]
-            move |__buf: &mut String| {
+            ::vy::from_fn(move |__buf: &mut String| {
                 __buf.reserve(#size_hint);
                 #(#stmts);*
-            }
+            })
         }
     })
 }
@@ -43,6 +43,7 @@ pub(crate) fn lazy(input: LazyInput) -> TokenStream {
 pub(crate) fn write(input: WriteInput) -> TokenStream {
     let mut text = String::new();
     let mut args = Vec::new();
+
     let mut fmt = Formatter::new(&mut text, &mut args);
 
     for node in &input.nodes {
@@ -90,6 +91,6 @@ fn expand_str(s: &str) -> TokenStream {
 
 fn expand_arg<T: ToTokens>(v: T) -> TokenStream {
     quote! {
-        ::vy::Render::render_to(#v, __buf)
+        ::vy::ToHtml::to_html(&#v, __buf)
     }
 }

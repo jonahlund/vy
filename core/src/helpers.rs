@@ -1,25 +1,15 @@
-macro_rules! via_itoap {
-    ($($ty:ty)*) => {
-        $(
-            impl $crate::Render for $ty {
-                #[inline]
-                fn render_to(self, buf: &mut String) {
-                    itoap::write_to_string(buf, self)
-                }
-            }
-        )*
-    };
+use crate::ToHtml;
+
+pub struct FromFn<F: Fn(&mut String)>(F);
+
+impl<F: Fn(&mut String)> ToHtml for FromFn<F> {
+    #[inline]
+    fn to_html(&self, buf: &mut String) {
+        (self.0)(buf);
+    }
 }
 
-macro_rules! via_ryu {
-    ($($ty:ty)*) => {
-        $(
-            impl $crate::Render for $ty {
-                #[inline]
-                fn render_to(self, buf: &mut String) {
-                    buf.push_str(ryu::Buffer::new().format(self));
-                }
-            }
-        )*
-    };
+#[inline]
+pub fn from_fn<F: Fn(&mut String)>(f: F) -> impl ToHtml {
+    FromFn(f)
 }

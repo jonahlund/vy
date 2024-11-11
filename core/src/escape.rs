@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::fmt::Write as _;
 
-use crate::Render;
+use crate::ToHtml;
 
 /// Escapes all special HTML characters in `input` and writes the result into
 /// `buf`.
@@ -22,23 +22,23 @@ pub fn escape_into(input: &str, buf: &mut String) {
 /// escaping.
 pub struct PreEscaped<T: ?Sized>(pub T);
 
-impl Render for PreEscaped<&str> {
+impl ToHtml for PreEscaped<&str> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         buf.push_str(self.0);
     }
 }
 
-impl Render for PreEscaped<String> {
+impl ToHtml for PreEscaped<String> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         buf.push_str(&self.0);
     }
 }
 
-impl Render for PreEscaped<core::fmt::Arguments<'_>> {
+impl ToHtml for PreEscaped<core::fmt::Arguments<'_>> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn to_html(&self, buf: &mut String) {
         let _ = buf.write_fmt(self.0);
     }
 }

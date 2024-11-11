@@ -2,7 +2,7 @@ use core::fmt::{Result, Write};
 
 use quote::ToTokens;
 use syn::{Expr, ExprLit};
-use vy_core::Render;
+use vy_core::ToHtml;
 
 use crate::ast;
 
@@ -41,20 +41,20 @@ impl<'a, 'b> Formatter<'a, 'b> {
         if let Expr::Lit(ExprLit { attrs, lit }) = e {
             if attrs.is_empty() {
                 match lit {
-                    syn::Lit::Str(lit_str) => {
-                        return lit_str.value().render_to(self.buf);
+                    syn::Lit::Str(str) => {
+                        return str.value().to_html(self.buf);
                     }
-                    syn::Lit::Char(lit_char) => {
-                        return lit_char.value().render_to(self.buf);
+                    syn::Lit::Char(char) => {
+                        return char.value().to_html(self.buf);
                     }
-                    syn::Lit::Int(lit_int) => {
-                        return lit_int.base10_digits().render_to(self.buf);
+                    syn::Lit::Int(int) => {
+                        return int.base10_digits().to_html(self.buf);
                     }
-                    syn::Lit::Float(lit_float) => {
-                        return lit_float.base10_digits().render_to(self.buf);
+                    syn::Lit::Float(float) => {
+                        return float.base10_digits().to_html(self.buf);
                     }
-                    syn::Lit::Bool(lit_bool) => {
-                        return lit_bool.value().render_to(self.buf);
+                    syn::Lit::Bool(bool) => {
+                        return bool.value().to_html(self.buf);
                     }
                     _ => {}
                 }
@@ -67,7 +67,7 @@ impl<'a, 'b> Formatter<'a, 'b> {
     pub fn write_value(&mut self, v: &'b ast::Value) {
         match v {
             ast::Value::LitStr(lit_str) => {
-                lit_str.value().render_to(self.buf);
+                lit_str.value().to_html(self.buf);
             }
             ast::Value::Expr(expr) => self.write_expr(expr),
         }
