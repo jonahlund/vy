@@ -17,8 +17,10 @@ pub use helpers::{from_fn, FromFn};
 ///
 /// [`PreEscaped`]: crate::PreEscaped
 pub trait ToHtml {
+    /// Writes the HTML into the given buffer.
     fn to_html(&self, buf: &mut String);
 
+    /// Allocates a new `String` with the given HTML.
     #[inline]
     fn to_string(&self) -> String
     where
