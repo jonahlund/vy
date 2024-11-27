@@ -7,16 +7,16 @@ extern crate self as vy;
 pub use vy_core::{from_fn, FromFn, PreEscaped, ToHtml};
 /// Creates a renderable type.
 ///
-/// This avoids allocating until [`render`] is called, which makes it
+/// This avoids allocating until [`to_string`] is called, which makes it
 /// suitable to use whenever you are simply passing along the result for
 /// further rendering.
 ///
-/// [`render`]: crate::Render
+/// [`to_string`]: crate::ToHtml::to_string
 ///
 /// # Example
 ///
 /// ```
-/// fn button(label: impl vy::Render) -> impl vy::Render {
+/// fn button(label: impl vy::ToHtml) -> impl vy::ToHtml {
 ///     vy::lazy! {
 ///         <button>{label}</button>
 ///     }
