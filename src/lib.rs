@@ -28,7 +28,7 @@ pub use vy_macros::lazy;
 ///
 /// Passing any non literal values will cause a compilation error.
 #[doc(inline)]
-pub use vy_macros::lit;
+pub use vy_macros::literal;
 /// Writes HTML to a [`String`].
 #[doc(inline)]
 pub use vy_macros::write;

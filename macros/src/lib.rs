@@ -37,7 +37,7 @@ pub(crate) struct LitInput {
 }
 
 #[proc_macro]
-pub fn lit(input: TokenStream) -> TokenStream {
+pub fn literal(input: TokenStream) -> TokenStream {
     let LitInput { text } = parse_macro_input!(input as LitInput);
     quote!(::vy::PreEscaped(#text)).into()
 }
