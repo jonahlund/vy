@@ -30,8 +30,6 @@ pub use vy_macros::lazy;
 #[doc(inline)]
 pub use vy_macros::lit;
 /// Writes HTML to a [`String`].
-///
-/// This macro eagerly writes HTML to a [`String`].
 #[doc(inline)]
 pub use vy_macros::write;
 
@@ -41,7 +39,7 @@ pub use vy_macros::write;
 #[macro_export]
 macro_rules! owned {
     ($($arg:tt)*) => {
-        $crate::ToHtml::to_string(&vy::lazy!($($arg)*))
+        $crate::ToHtml::to_string(&$crate::lazy!($($arg)*))
     };
 }
 
@@ -49,7 +47,7 @@ macro_rules! owned {
 ///
 /// # Usage
 /// ```
-/// let page = vy::render! {
+/// let page = vy::owned! {
 ///    {vy::script!(
 ///        console.log("Hello,");
 ///        console.log("world!");
@@ -63,7 +61,7 @@ macro_rules! owned {
 #[macro_export]
 macro_rules! script {
     ($($t:tt)*) => {
-        vy::PreEscaped(concat!("<script>", stringify!($($t)*), "</script>"))
+        $crate::PreEscaped(concat!("<script>", stringify!($($t)*), "</script>"))
     };
 }
 
@@ -72,7 +70,7 @@ macro_rules! script {
 /// # Usage
 ///
 /// ```
-/// let page = vy::render! {
+/// let page = vy::owned! {
 ///    {vy::style!(
 ///        .red { color: red }
 ///        .green { color: green }
@@ -86,7 +84,7 @@ macro_rules! script {
 #[macro_export]
 macro_rules! style {
     ($($t:tt)*) => {
-        vy::PreEscaped(concat!("<style>", stringify!($($t)*), "</style>"))
+        $crate::PreEscaped(concat!("<style>", stringify!($($t)*), "</style>"))
     };
 }
 
