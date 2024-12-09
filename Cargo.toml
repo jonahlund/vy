@@ -16,6 +16,7 @@ rust-version = "1.70"
 [features]
 default = ["std"]
 std = ["vy-core/std"]
+either = ["vy-core/either"]
 
 [dependencies]
 vy-macros = { version = "0.1.1", path = "macros" }

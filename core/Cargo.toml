@@ -9,9 +9,11 @@ license = "MIT"
 rust-version = "1.70"
 
 [dependencies]
+either = { version = "1.13.0", optional = true }
 itoap = "1.0.1"
 ryu = "1.0.18"
 
 [features]
 default = ["std"]
 std = []
+either = ["dep:either"]

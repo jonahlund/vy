@@ -124,6 +124,17 @@ impl<T: ToHtml, const N: usize> ToHtml for [T; N] {
     }
 }
 
+#[cfg(feature = "either")]
+impl<A: ToHtml, B: ToHtml> ToHtml for either::Either<A, B> {
+    #[inline]
+    fn to_html(&self, buf: &mut String) {
+        match self {
+            either::Either::Left(left) => left.to_html(buf),
+            either::Either::Right(right) => right.to_html(buf),
+        }
+    }
+}
+
 macro_rules! impl_tuple {
 	((
 		$($i:ident,)+
