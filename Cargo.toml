@@ -1,9 +1,9 @@
 [workspace]
-members = ["core", "macros"]
+members = ["macros", "runtime"]
 
 [package]
 name = "vy"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = "Fast and minimal HTML templating macros in Rust"
@@ -14,10 +14,9 @@ license = "MIT"
 rust-version = "1.70"
 
 [features]
+std = []
 default = ["std"]
-std = ["vy-core/std"]
-either = ["vy-core/either"]
 
 [dependencies]
-vy-macros = { version = "0.1.1", path = "macros" }
-vy-core = { version = "0.1.1", path = "core" }
+vy-macros = { version = "0.2.0", path = "macros" }
+vy-runtime = { version = "0.2.0", path = "runtime" }

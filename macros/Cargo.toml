@@ -1,19 +1,18 @@
 [package]
 name = "vy-macros"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = "Fast and minimal HTML templating macros in Rust"
-repository = "https://github.com/JonahLund/vy"
-license = "MIT"
-rust-version = "1.70"
 
 [lib]
 proc-macro = true
 
+[features]
+default = ["tiny-rsx"]
+tiny-rsx = ["dep:tiny-rsx"]
+
 [dependencies]
-vy-core = { version = "0.1.1", path = "../core" }
-tiny-rsx = "0.3.0"
-proc-macro2 = "1"
-quote = "1"
-syn = "2"
+vy-runtime = { path = "../runtime" }
+proc-macro2 = "1.0.93"
+quote = "1.0.38"
+syn = "2.0.96"
+tiny-rsx = { path = "/home/jlund/Code/tiny-rsx", optional = true }

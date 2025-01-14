@@ -1,112 +1,124 @@
-use core::fmt::{Result, Write};
+use syn::{Expr, ExprGroup, ExprLit, Lit};
+use tiny_rsx::ast::{Attr, Element, Node, Value, VoidTag};
+use vy_runtime::ToHtml as _;
 
-use quote::ToTokens;
-use syn::{Expr, ExprLit};
-use vy_core::ToHtml;
+use crate::InsertAt;
 
-use crate::ast;
-
-pub struct Formatter<'a, 'b> {
-    pub buf: &'a mut String,
-    pub args: &'a mut Vec<(usize, &'b dyn ToTokens)>,
+pub struct Formatter<'a> {
+    pub literal: String,
+    pub values: Vec<InsertAt<'a>>,
 }
 
-impl Write for Formatter<'_, '_> {
-    #[inline]
-    fn write_str(&mut self, s: &str) -> Result {
-        self.buf.write_str(s)
-    }
-}
-
-impl<'a, 'b> Formatter<'a, 'b> {
-    #[inline]
-    pub fn new(
-        buf: &'a mut String,
-        args: &'a mut Vec<(usize, &'b dyn ToTokens)>,
-    ) -> Self {
-        Self { buf, args }
+impl<'a> Formatter<'a> {
+    pub fn new() -> Self {
+        Self {
+            literal: String::new(),
+            values: Vec::new(),
+        }
     }
 
-    #[inline]
-    pub fn write_ident(&mut self, i: &ast::DashIdent) {
-        let _ = write!(self, "{}", i);
+    pub fn write_expr(&mut self, expr: &'a Expr) {
+        match &expr {
+            Expr::Lit(ExprLit {
+                lit: Lit::Str(lit_str),
+                ..
+            }) => {
+                lit_str.value().write_escaped(&mut self.literal);
+            }
+            Expr::Lit(ExprLit {
+                lit: Lit::Bool(lit_bool),
+                ..
+            }) => {
+                lit_bool.value.write_escaped(&mut self.literal);
+            }
+            Expr::Lit(ExprLit {
+                lit: Lit::Char(lit_char),
+                ..
+            }) => {
+                lit_char.value().write_escaped(&mut self.literal);
+            }
+            Expr::Lit(ExprLit {
+                lit: Lit::Int(lit_int),
+                ..
+            }) => {
+                lit_int.base10_digits().write_escaped(&mut self.literal);
+            }
+            Expr::Lit(ExprLit {
+                lit: Lit::Float(lit_float),
+                ..
+            }) => {
+                lit_float.base10_digits().write_escaped(&mut self.literal);
+            }
+            Expr::Group(ExprGroup { expr, .. }) => {
+                self.write_expr(expr);
+            }
+            _ => {
+                self.values.push(InsertAt(self.literal.len(), expr));
+            }
+        }
     }
 
-    #[inline]
-    pub fn write_doctype(&mut self, _: &ast::Doctype) {
-        let _ = self.write_str("<!DOCTYPE html>");
+    pub fn write_value(&mut self, val: &'a Value) {
+        match val {
+            Value::Expr(expr) => self.write_expr(expr),
+            Value::LitStr(lit_str) => {
+                lit_str.value().write_escaped(&mut self.literal);
+            }
+        }
     }
 
-    pub fn write_expr(&mut self, e: &'b Expr) {
-        if let Expr::Lit(ExprLit { attrs, lit }) = e {
-            if attrs.is_empty() {
-                match lit {
-                    syn::Lit::Str(str) => {
-                        return str.value().to_html(self.buf);
-                    }
-                    syn::Lit::Char(char) => {
-                        return char.value().to_html(self.buf);
-                    }
-                    syn::Lit::Int(int) => {
-                        return int.base10_digits().to_html(self.buf);
-                    }
-                    syn::Lit::Float(float) => {
-                        return float.base10_digits().to_html(self.buf);
-                    }
-                    syn::Lit::Bool(bool) => {
-                        return bool.value().to_html(self.buf);
-                    }
-                    _ => {}
+    pub fn write_attribute(&mut self, attr: &'a Attr) {
+        self.literal.push(' ');
+        self.literal.push_str(&attr.key.to_string());
+        self.literal.push('=');
+        self.literal.push('"');
+        self.write_value(&attr.value);
+        self.literal.push('"');
+    }
+
+    pub fn write_element(&mut self, el: &'a Element) {
+        self.literal.push('<');
+        match el {
+            Element::OpeningClosing {
+                opening_tag,
+                children,
+                ..
+            } => {
+                let name = opening_tag.name.to_string();
+                self.literal.push_str(&name);
+                for attr in &opening_tag.attrs {
+                    self.write_attribute(attr);
                 }
+                self.literal.push('>');
+                for child in children {
+                    match child {
+                        Node::Value(val) => {
+                            self.write_value(val);
+                        }
+                        Node::Element(el) => {
+                            self.write_element(el);
+                        }
+                    }
+                }
+                self.literal.push('<');
+                self.literal.push('/');
+                self.literal.push_str(&name);
+                self.literal.push('>');
             }
-        }
-        self.args.push((self.buf.len(), e));
-    }
-
-    #[inline]
-    pub fn write_value(&mut self, v: &'b ast::Value) {
-        match v {
-            ast::Value::LitStr(lit_str) => {
-                lit_str.value().to_html(self.buf);
-            }
-            ast::Value::Expr(expr) => self.write_expr(expr),
-        }
-    }
-
-    pub fn write_attr(&mut self, a: &'b ast::Attr) {
-        self.write_ident(&a.key);
-        let _ = self.write_char('=');
-        let _ = self.write_char('"');
-        self.write_value(&a.value);
-        let _ = self.write_char('"');
-    }
-
-    pub fn write_tag(&mut self, t: &'b ast::Tag) {
-        match t {
-            ast::Tag::Opening { name, attrs, .. } => {
-                let _ = self.write_char('<');
-                self.write_ident(name);
+            Element::Void(VoidTag { name, attrs, .. }) => {
+                self.literal.push_str(&name.to_string());
                 for attr in attrs {
-                    let _ = self.write_char(' ');
-                    self.write_attr(attr);
+                    self.write_attribute(attr);
                 }
-                let _ = self.write_char('>');
-            }
-            ast::Tag::Closing { name, .. } => {
-                let _ = self.write_char('<');
-                let _ = self.write_char('/');
-                self.write_ident(name);
-                let _ = self.write_char('>');
+                self.literal.push('>');
             }
         }
     }
 
-    #[inline]
-    pub fn write_node(&mut self, n: &'b ast::Node) {
-        match n {
-            ast::Node::Doctype(d) => self.write_doctype(d),
-            ast::Node::Tag(t) => self.write_tag(t),
-            ast::Node::Value(v) => self.write_value(v),
+    pub fn write_node(&mut self, node: &'a Node) {
+        match node {
+            Node::Value(value) => self.write_value(value),
+            Node::Element(element) => self.write_element(element),
         }
     }
 }

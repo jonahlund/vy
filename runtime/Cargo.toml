@@ -1,0 +1,12 @@
+[package]
+name = "vy-runtime"
+version = "0.2.0"
+edition = "2024"
+
+[features]
+std = []
+default = ["std"]
+
+[dependencies]
+itoap = "1.0.1"
+ryu = "1.0.18"
