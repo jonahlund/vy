@@ -1,8 +1,8 @@
-//! Const concat macro with support for `vy-runtime`
+//! Const concat macro with support for `vy-core`
 
 use core::{char, ptr};
 
-use vy_runtime::{escape_char, Escape, PreEscaped};
+use vy_core::{escape_char, Escape, PreEscaped};
 
 pub struct Concat<T>(pub T);
 

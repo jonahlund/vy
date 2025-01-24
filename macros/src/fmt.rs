@@ -1,6 +1,6 @@
 use syn::{Expr, ExprGroup, ExprLit, Lit};
 use tiny_rsx::ast::{Attr, Element, Node, Value, VoidTag};
-use vy_runtime::ToHtml as _;
+use vy_core::ToHtml as _;
 
 use crate::InsertAt;
 

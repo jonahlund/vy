@@ -1,5 +1,5 @@
 [workspace]
-members = ["macros", "runtime"]
+members = ["macros", "core"]
 
 [package]
 name = "vy"
@@ -18,5 +18,5 @@ std = []
 default = ["std"]
 
 [dependencies]
-vy-macros = { git = "https://github.com/jonahlund/vy", branch = "v0.2.0" }
-vy-runtime = { git = "https://github.com/jonahlund/vy", branch = "v0.2.0" }
+vy-macros = { path = "./macros", version = "0.2.0" }
+vy-core = { path = "./core", version = "0.2.0" }

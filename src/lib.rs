@@ -4,8 +4,8 @@
 pub mod concat;
 mod expand;
 
+pub use vy_core::*;
 pub use vy_macros::*;
-pub use vy_runtime::*;
 
 pub const DOCTYPE: PreEscaped<&str> = PreEscaped("<!DOCTYPE html>");
 

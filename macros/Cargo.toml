@@ -11,7 +11,7 @@ default = ["tiny-rsx"]
 tiny-rsx = ["dep:tiny-rsx"]
 
 [dependencies]
-vy-runtime = { git = "https://github.com/jonahlund/vy", branch = "v0.2.0" }
+vy-core = { path = "../core", version = "0.2.0" }
 proc-macro2 = "1.0.93"
 quote = "1.0.38"
 syn = "2.0.96"
