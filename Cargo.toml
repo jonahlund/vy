@@ -18,5 +18,5 @@ std = []
 default = ["std"]
 
 [dependencies]
-vy-macros = { git = "https://github.com/jonahlund/vy-macros", branch = "v0.2.0" }
-vy-runtime = { git = "https://github.com/jonahlund/vy-runtime", branch = "v0.2.0" }
+vy-macros = { git = "https://github.com/jonahlund/vy", branch = "v0.2.0" }
+vy-runtime = { git = "https://github.com/jonahlund/vy", branch = "v0.2.0" }
