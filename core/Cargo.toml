@@ -4,9 +4,11 @@ version = "0.2.0"
 edition = "2021"
 
 [features]
-std = []
 default = ["std"]
+std = []
+either = ["dep:either"]
 
 [dependencies]
-itoap = "1.0.1"
-ryu = "1.0.18"
+either = { version = "1.13.0", optional = true }
+itoa = "1.0.14"
+ryu = "1.0.19"

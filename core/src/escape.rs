@@ -4,8 +4,8 @@ use core::fmt::Write as _;
 use crate::ToHtml;
 
 #[inline]
-pub const fn escape_char(char: char) -> Option<&'static str> {
-    match char {
+pub const fn escape_char(ch: char) -> Option<&'static str> {
+    match ch {
         '&' => Some("&amp;"),
         '<' => Some("&lt;"),
         '>' => Some("&gt;"),

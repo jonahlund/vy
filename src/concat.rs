@@ -1,5 +1,3 @@
-//! Const concat macro with support for `vy-core`
-
 use core::{char, ptr};
 
 use vy_core::{escape_char, Escape, PreEscaped};
@@ -8,14 +6,12 @@ pub struct Concat<T>(pub T);
 
 #[macro_export]
 macro_rules! concat {
-    ($($arg:expr$(,)*),*) => {{
-        // The total length of the new array
+    ($($arg:expr $(,)*),*) => {{
         const LEN: usize = {
             let mut sum = 0;
             $(sum += $crate::concat::Concat($arg).len();)*
             sum
         };
-        // The new array
         #[allow(unused_assignments)]
         const CONCAT: [u8; LEN] = {
             let mut arr = [0u8; LEN];

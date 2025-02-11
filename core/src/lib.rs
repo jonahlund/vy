@@ -10,8 +10,8 @@ mod helpers;
 use alloc::{boxed::Box, string::String};
 
 pub use crate::{
-    escape::{Escape, PreEscaped, escape, escape_char, escape_into},
-    helpers::{FromFn, from_fn},
+    escape::{escape, escape_char, escape_into, Escape, PreEscaped},
+    helpers::{from_fn, FromFn},
 };
 
 /// A type that can be represented in HTML.
@@ -49,13 +49,13 @@ impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
     }
 }
 
-macro_rules! via_itoap {
+macro_rules! via_itoa {
     ($($ty:ty)*) => {
         $(
             impl $crate::ToHtml for $ty {
                 #[inline]
                 fn write_escaped(&self, buf: &mut String) {
-                    itoap::write_to_string(buf, *self)
+                    buf.push_str(itoa::Buffer::new().format(*self))
                 }
             }
         )*
@@ -75,7 +75,7 @@ macro_rules! via_ryu {
     };
 }
 
-via_itoap! {
+via_itoa! {
     isize i8 i16 i32 i64 i128
     usize u8 u16 u32 u64 u128
 }
@@ -157,3 +157,11 @@ macro_rules! impl_tuple {
 }
 
 impl_tuple!(A B C D E F G H I J K);
+
+#[cfg(feature = "either")]
+impl<L: ToHtml, R: ToHtml> ToHtml for either::Either<L, R> {
+    #[inline]
+    fn write_escaped(&self, buf: &mut String) {
+        either::for_both!(self, x => x.write_escaped(buf))
+    }
+}

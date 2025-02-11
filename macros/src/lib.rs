@@ -1,62 +1,124 @@
 mod fmt;
 
-use fmt::Formatter;
+use fmt::{Part, Serializer};
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::{quote, ToTokens as _};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
-    parse_macro_input, Expr, Path, Token,
+    parse_macro_input,
+    punctuated::Punctuated,
+    Path, Result, Token,
 };
-use tiny_rsx::ast::{Node, NodeTree};
+use tiny_rsx::ast::Node;
 
-struct Into {
-    makro: Path,
-    nodes: Box<[Node]>,
+struct Forward {
+    to: Path,
+    nodes: Vec<Node>,
 }
 
-impl Parse for Into {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        let makro = input.parse()?;
-        _ = input.parse::<Token![,]>();
-        let nodes = input.parse::<NodeTree>()?.0;
+impl Parse for Forward {
+    fn parse(input: syn::parse::ParseStream) -> Result<Self> {
+        let to = input.parse()?;
+        _ = input.parse::<Token![,]>()?;
+        let nodes = parse_zero_or_more(input)?;
 
-        Ok(Self { makro, nodes })
+        Ok(Self { to, nodes })
     }
 }
 
 #[proc_macro]
-pub fn into(input: TokenStream) -> TokenStream {
-    let Into { makro, nodes } = parse_macro_input!(input as Into);
+pub fn forward(input: TokenStream) -> TokenStream {
+    let Forward { to, nodes } = parse_macro_input!(input as Forward);
 
-    let mut fmt = Formatter::new();
-    for node in &nodes {
-        fmt.write_node(node);
+    let mut ser = Serializer::new();
+    for node in nodes {
+        ser.write_node(node);
     }
-    let parts = into_parts(&fmt.literal, &fmt.values);
+    let parts = ser.as_parts();
 
     quote! {
-        #makro!(#(#parts),*)
+        #to!(#(#parts),*)
     }
     .into()
 }
 
-struct InsertAt<'a>(usize, &'a Expr);
+struct Closure {
+    parts: Punctuated<Part<'static>, Token![,]>,
+}
 
-fn into_parts(literal: &str, values: &[InsertAt]) -> Vec<TokenStream2> {
-    let mut res = Vec::new();
-    let mut cursor = 0;
-    for InsertAt(pos, expr) in values {
-        let slice = &literal[cursor..*pos];
-        if !slice.is_empty() {
-            res.push(slice.to_token_stream());
+impl Parse for Closure {
+    fn parse(input: ParseStream) -> Result<Self> {
+        Ok(Self {
+            parts: Punctuated::parse_terminated(input)?,
+        })
+    }
+}
+
+#[proc_macro]
+pub fn closure(input: TokenStream) -> TokenStream {
+    let Closure { parts } = parse_macro_input!(input as Closure);
+
+    let named_parts = parts
+        .iter()
+        .enumerate()
+        .map(|(i, part)| (part, format_ident!("__arg{i}")))
+        .collect::<Vec<_>>();
+    let named_values = named_parts
+        .iter()
+        .filter_map(|(part, name)| {
+            if let Part::Expr(val) = part {
+                Some((val, name))
+            } else {
+                None
+            }
+        })
+        .collect::<Vec<_>>();
+
+    if named_values.is_empty() {
+        return quote! {
+            ::vy::PreEscaped(::std::concat!(#parts))
         }
-        res.push(expr.to_token_stream());
-        cursor = *pos;
+        .into();
     }
-    if cursor < literal.len() {
-        let slice = &literal[cursor..];
-        res.push(slice.to_token_stream());
+
+    let stmts = named_parts.iter().map(|(part, name)| match part {
+        Part::Str(s) => quote! {
+            __buf.push_str(#s)
+        },
+        Part::Expr(_) => quote! {
+            ::vy::ToHtml::write_escaped(&#name, __buf)
+        },
+    });
+    let est_size = parts.iter().fold(0, |mut acc, part| {
+        match part {
+            Part::Str(s) => acc += s.len(),
+            Part::Expr(expr) => {
+                acc += {
+                    let mut s = expr.to_token_stream().to_string();
+                    s.retain(|ch| ch.is_alphanumeric());
+                    s.len()
+                }
+            }
+        };
+        acc
+    });
+    let (values, names): (Vec<_>, Vec<_>) = named_values.into_iter().unzip();
+
+    quote!(match (#(#values),*) {
+        (#(#names),*) => {
+            ::vy::from_fn(move |__buf| {
+                __buf.reserve(#est_size);
+                #(#stmts;)*
+            })
+        }
+    })
+    .into()
+}
+
+fn parse_zero_or_more<T: Parse>(input: ParseStream) -> Result<Vec<T>> {
+    let mut res = Vec::new();
+    while !input.is_empty() {
+        res.push(input.parse()?);
     }
-    res
+    Ok(res)
 }
