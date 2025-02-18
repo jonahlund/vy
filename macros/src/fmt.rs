@@ -97,13 +97,30 @@ impl Serializer {
         }
     }
 
+    pub fn write_attr_value(&mut self, val: Value) {
+        match val {
+            // TODO
+            Value::Expr(expr) => self.write_expr(expr),
+            Value::LitStr(lit_str) => {
+                self.literal.push_str(&lit_str.value());
+            }
+        }
+    }
+
     pub fn write_attribute(&mut self, attr: Attr) {
         self.literal.push(' ');
-        self.literal.push_str(&attr.key.to_string());
-        self.literal.push('=');
-        self.literal.push('"');
-        self.write_value(attr.value);
-        self.literal.push('"');
+        match attr {
+            Attr::Value(value) => {
+                self.write_value(value);
+            }
+            Attr::Keyed { key, value, .. } => {
+                self.literal.push_str(&key.to_string());
+                self.literal.push('=');
+                self.literal.push('"');
+                self.write_attr_value(value);
+                self.literal.push('"');
+            }
+        }
     }
 
     pub fn write_element(&mut self, el: Element) {
