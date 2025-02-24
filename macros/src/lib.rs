@@ -86,7 +86,7 @@ pub fn closure(input: TokenStream) -> TokenStream {
             __buf.push_str(#s)
         },
         Part::Expr(_) => quote! {
-            ::vy::ToHtml::write_escaped(&#name, __buf)
+            ::vy::IntoHtml::write_escaped(#name, __buf)
         },
     });
     let est_size = parts.iter().fold(0, |mut acc, part| {

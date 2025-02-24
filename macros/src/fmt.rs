@@ -6,7 +6,7 @@ use syn::{
     Expr, ExprGroup, ExprLit, Lit, LitStr,
 };
 use tiny_rsx::ast::{Attr, Element, Node, Value, VoidTag};
-use vy_core::ToHtml as _;
+use vy_core::IntoHtml as _;
 
 struct InsertAt(usize, Expr);
 

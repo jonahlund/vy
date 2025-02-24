@@ -9,10 +9,19 @@ extern crate std;
 
 pub mod concat;
 
-pub use vy_core::{from_fn, Escape, FromFn, PreEscaped, ToHtml};
+pub use vy_core::{from_fn, Escape, FromFn, IntoHtml, PreEscaped};
 #[doc(hidden)]
 pub use vy_macros::closure;
 pub use vy_macros::forward;
+
+#[doc(hidden)]
+pub mod __internal {
+    #[cfg(feature = "either")]
+    pub use either;
+}
+
+#[cfg(feature = "either")]
+pub use __internal::either::Either::*;
 
 #[macro_export]
 macro_rules! lit {
@@ -55,6 +64,6 @@ macro_rules! str {
 #[macro_export]
 macro_rules! string {
     ($($arg:expr),*) => {
-        $crate::ToHtml::to_string(&$crate::closure($($arg),*))
+        $crate::IntoHtml::to_string(&$crate::closure($($arg),*))
     };
 }

@@ -7,7 +7,7 @@ extern crate std;
 mod escape;
 mod helpers;
 
-use alloc::{boxed::Box, string::String};
+use alloc::string::String;
 
 pub use crate::{
     escape::{escape, escape_char, escape_into, Escape, PreEscaped},
@@ -20,13 +20,13 @@ pub use crate::{
 /// To render types unescaped, use [`PreEscaped`].
 ///
 /// [`PreEscaped`]: crate::PreEscaped
-pub trait ToHtml {
+pub trait IntoHtml {
     /// Writes the HTML into the given buffer.
-    fn write_escaped(&self, buf: &mut String);
+    fn write_escaped(self, buf: &mut String);
 
     /// Allocates a new `String` with the given HTML.
     #[inline]
-    fn to_string(&self) -> String
+    fn into_string(self) -> String
     where
         Self: Sized,
     {
@@ -36,26 +36,13 @@ pub trait ToHtml {
     }
 }
 
-impl<T: ToHtml + ?Sized> ToHtml for &T {
-    #[inline]
-    fn write_escaped(&self, buf: &mut String) {
-        T::write_escaped(&**self, buf)
-    }
-}
-
-impl<T: ToHtml + ?Sized> ToHtml for Box<T> {
-    fn write_escaped(&self, buf: &mut String) {
-        T::write_escaped(&**self, buf);
-    }
-}
-
 macro_rules! via_itoa {
     ($($ty:ty)*) => {
         $(
-            impl $crate::ToHtml for $ty {
+            impl $crate::IntoHtml for $ty {
                 #[inline]
-                fn write_escaped(&self, buf: &mut String) {
-                    buf.push_str(itoa::Buffer::new().format(*self))
+                fn write_escaped(self, buf: &mut String) {
+                    buf.push_str(itoa::Buffer::new().format(self))
                 }
             }
         )*
@@ -65,10 +52,10 @@ macro_rules! via_itoa {
 macro_rules! via_ryu {
     ($($ty:ty)*) => {
         $(
-            impl $crate::ToHtml for $ty {
+            impl $crate::IntoHtml for $ty {
                 #[inline]
-                fn write_escaped(&self, buf: &mut String) {
-                    buf.push_str(ryu::Buffer::new().format(*self));
+                fn write_escaped(self, buf: &mut String) {
+                    buf.push_str(ryu::Buffer::new().format(self));
                 }
             }
         )*
@@ -82,47 +69,38 @@ via_itoa! {
 
 via_ryu! { f32 f64 }
 
-impl ToHtml for str {
+impl IntoHtml for &str {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         escape_into(buf, self)
     }
 }
 
-impl ToHtml for String {
+impl IntoHtml for String {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         self.as_str().write_escaped(buf)
     }
 }
 
-impl ToHtml for char {
+impl IntoHtml for char {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         escape_into(buf, self.encode_utf8(&mut [0; 4]));
     }
 }
 
-impl ToHtml for bool {
+impl IntoHtml for bool {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
-        buf.push_str(if *self { "true" } else { "false" })
+    fn write_escaped(self, buf: &mut String) {
+        buf.push_str(if self { "true" } else { "false" })
     }
 }
 
-impl<T: ToHtml> ToHtml for Option<T> {
+impl<T: IntoHtml> IntoHtml for Option<T> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         if let Some(x) = self {
-            x.write_escaped(buf)
-        }
-    }
-}
-
-impl<T: ToHtml, const N: usize> ToHtml for [T; N] {
-    #[inline]
-    fn write_escaped(&self, buf: &mut String) {
-        for x in self {
             x.write_escaped(buf)
         }
     }
@@ -132,11 +110,11 @@ macro_rules! impl_tuple {
 	((
 		$($i:ident,)+
 	)) => {
-		impl<$($i,)+> ToHtml for ($($i,)+)
+		impl<$($i,)+> IntoHtml for ($($i,)+)
 		where
-			$($i: ToHtml,)+
+			$($i: IntoHtml,)+
 		{
-			fn write_escaped(&self, buf: &mut String) {
+			fn write_escaped(self, buf: &mut String) {
 				#[allow(non_snake_case)]
 				let ($($i,)+) = self;
 				$(
@@ -159,9 +137,9 @@ macro_rules! impl_tuple {
 impl_tuple!(A B C D E F G H I J K);
 
 #[cfg(feature = "either")]
-impl<L: ToHtml, R: ToHtml> ToHtml for either::Either<L, R> {
+impl<L: IntoHtml, R: IntoHtml> IntoHtml for either::Either<L, R> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         either::for_both!(self, x => x.write_escaped(buf))
     }
 }

@@ -9,8 +9,9 @@ edition = "2021"
 [features]
 default = ["std"]
 std = ["vy-core/either"]
-either = ["vy-core/either"]
+either = ["dep:either", "vy-core/either"]
 
 [dependencies]
+either = { version = "1.13.0", optional = true }
 vy-core = { path = "./core", version = "0.2.0" }
 vy-macros = { path = "./macros", version = "0.2.0" }

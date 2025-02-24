@@ -1,7 +1,7 @@
 use alloc::string::String;
 use core::fmt::Write as _;
 
-use crate::ToHtml;
+use crate::IntoHtml;
 
 #[inline]
 pub const fn escape_char(ch: char) -> Option<&'static str> {
@@ -38,23 +38,23 @@ pub struct Escape<T>(pub T);
 
 pub struct PreEscaped<T>(pub T);
 
-impl ToHtml for PreEscaped<&str> {
+impl IntoHtml for PreEscaped<&str> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         buf.push_str(self.0);
     }
 }
 
-impl ToHtml for PreEscaped<String> {
+impl IntoHtml for PreEscaped<String> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         buf.push_str(&self.0);
     }
 }
 
-impl ToHtml for PreEscaped<core::fmt::Arguments<'_>> {
+impl IntoHtml for PreEscaped<core::fmt::Arguments<'_>> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         let _ = buf.write_fmt(self.0);
     }
 }

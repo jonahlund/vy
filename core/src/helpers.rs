@@ -1,17 +1,17 @@
 use alloc::string::String;
 
-use crate::ToHtml;
+use crate::IntoHtml;
 
-pub struct FromFn<F: Fn(&mut String)>(F);
+pub struct FromFn<F>(F);
 
-impl<F: Fn(&mut String)> ToHtml for FromFn<F> {
+impl<F: FnOnce(&mut String)> IntoHtml for FromFn<F> {
     #[inline]
-    fn write_escaped(&self, buf: &mut String) {
+    fn write_escaped(self, buf: &mut String) {
         (self.0)(buf);
     }
 }
 
 #[inline]
-pub fn from_fn<F: Fn(&mut String)>(f: F) -> FromFn<F> {
+pub fn from_fn<F: FnOnce(&mut String)>(f: F) -> FromFn<F> {
     FromFn(f)
 }
