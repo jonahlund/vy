@@ -7,8 +7,10 @@ edition = "2021"
 proc-macro = true
 
 [dependencies]
+proc-macro2 = "1"
+quote = "1"
+syn = { version = "2", features = ["full"] }
 vy-core = { path = "../core", version = "0.2.0" }
-proc-macro2 = "1.0.93"
-quote = "1.0.38"
-syn = "2.0.98"
-tiny-rsx = { git = "https://github.com/jonahlund/tiny-rsx.git", branch = "v0.4.0" }
+
+[dev-dependencies]
+vy = { path = ".." }

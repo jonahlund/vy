@@ -1,193 +1,217 @@
-use std::borrow::Cow;
-
-use quote::ToTokens;
+use proc_macro2::{Span, TokenStream};
+use quote::{format_ident, quote, ToTokens};
 use syn::{
-    parse::{Parse, ParseStream},
-    Expr, ExprGroup, ExprLit, Lit, LitStr,
+    parse_quote, Block, Expr, ExprBlock, ExprGroup, ExprLit, Ident, Lit, Token,
 };
-use tiny_rsx::ast::{Attr, Element, Node, Value, VoidTag};
-use vy_core::IntoHtml as _;
+use vy_core::IntoHtml;
 
-struct InsertAt(usize, Expr);
+use crate::{
+    ast::{Attr, Element, Node},
+    known::is_void_tag,
+};
 
-pub enum Part<'s> {
-    Str(Cow<'s, str>),
-    Expr(Cow<'s, Expr>),
+pub struct Serializer<'s> {
+    buf: &'s mut String,
+    values: Vec<(usize, Expr)>,
+    imports: Vec<Ident>,
 }
 
-impl Parse for Part<'_> {
-    fn parse(input: ParseStream) -> syn::Result<Self> {
-        if input.peek(LitStr) {
-            Ok(Self::Str(input.parse::<LitStr>()?.value().into()))
-        } else {
-            Ok(Self::Expr(Cow::Owned(input.parse()?)))
-        }
-    }
-}
-
-impl ToTokens for Part<'_> {
-    fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
-        match self {
-            Part::Str(str) => str.to_tokens(tokens),
-            Part::Expr(expr) => expr.to_tokens(tokens),
-        }
-    }
-}
-
-pub struct Serializer {
-    literal: String,
-    values: Vec<InsertAt>,
-}
-
-impl Serializer {
-    pub fn new() -> Self {
+impl<'s> Serializer<'s> {
+    pub fn new(buf: &'s mut String) -> Self {
         Self {
-            literal: String::new(),
+            buf,
             values: Vec::new(),
+            imports: Vec::new(),
         }
     }
 
-    pub fn write_expr(&mut self, expr: Expr) {
+    pub fn write_expr(&mut self, mut expr: Expr) {
         match expr {
-            Expr::Lit(ExprLit {
-                lit: Lit::Str(lit_str),
-                ..
-            }) => {
-                lit_str.value().write_escaped(&mut self.literal);
-            }
-            Expr::Lit(ExprLit {
-                lit: Lit::Bool(lit_bool),
-                ..
-            }) => {
-                lit_bool.value.write_escaped(&mut self.literal);
-            }
-            Expr::Lit(ExprLit {
-                lit: Lit::Char(lit_char),
-                ..
-            }) => {
-                lit_char.value().write_escaped(&mut self.literal);
-            }
-            Expr::Lit(ExprLit {
-                lit: Lit::Int(lit_int),
-                ..
-            }) => {
-                lit_int.base10_digits().write_escaped(&mut self.literal);
-            }
-            Expr::Lit(ExprLit {
-                lit: Lit::Float(lit_float),
-                ..
-            }) => {
-                lit_float.base10_digits().write_escaped(&mut self.literal);
-            }
-            Expr::Group(ExprGroup { expr, .. }) => {
+            Expr::Group(ExprGroup { attrs, expr, .. }) if attrs.is_empty() => {
                 self.write_expr(*expr);
             }
+            Expr::If(_) => {
+                let mut count = 1;
+                let mut current = Some(&expr);
+                while let Some(Expr::If(node)) = current {
+                    current =
+                        node.else_branch.as_ref().map(|(_, expr)| &**expr);
+                    count += 1;
+                }
+
+                let either_suffix =
+                    if count > 2 { Some(count) } else { None }.into_string();
+                let either = format_ident!("Either{either_suffix}");
+
+                transform_branches(&either, 0, &mut expr);
+
+                self.values.push((self.buf.len(), expr));
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Str(lit_str),
+            }) if attrs.is_empty() => {
+                lit_str.value().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Char(lit_char),
+            }) if attrs.is_empty() => {
+                lit_char.value().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Int(lit_int),
+            }) if attrs.is_empty() => {
+                lit_int.base10_digits().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Float(lit_float),
+            }) if attrs.is_empty() => {
+                lit_float.base10_digits().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Bool(lit_bool),
+            }) if attrs.is_empty() => {
+                lit_bool.value().escape_and_write(self.buf);
+            }
             _ => {
-                self.values.push(InsertAt(self.literal.len(), expr));
+                self.values.push((self.buf.len(), expr));
             }
         }
     }
 
-    pub fn write_value(&mut self, val: Value) {
-        match val {
-            Value::Expr(expr) => self.write_expr(expr),
-            Value::LitStr(lit_str) => {
-                lit_str.value().write_escaped(&mut self.literal);
-            }
+    pub fn write_attr(&mut self, attr: Attr) {
+        let name = attr.name.to_string();
+        if attr.is_optional() {
+            let sep_name_eq = String::from(' ') + &name + "=\"";
+            let value = &attr.value;
+
+            self.write_expr(parse_quote! {
+                ::core::option::Option::map(
+                    #value,
+                    |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped('"'))
+                )
+            });
+        } else {
+            self.buf.push(' ');
+            self.buf.push_str(&name);
+            self.buf.push('=');
+            self.buf.push('"');
+            self.write_expr(attr.value);
+            self.buf.push('"');
         }
     }
 
-    pub fn write_attr_value(&mut self, val: Value) {
-        match val {
-            // TODO
-            Value::Expr(expr) => self.write_expr(expr),
-            Value::LitStr(lit_str) => {
-                self.literal.push_str(&lit_str.value());
-            }
+    pub fn write_element(&mut self, Element(head, body): Element) {
+        let name = head.name.to_string();
+        self.imports.push(head.name);
+        self.buf.push('<');
+        self.buf.push_str(&name);
+        for attr in body.attrs {
+            self.write_attr(attr);
         }
-    }
-
-    pub fn write_attribute(&mut self, attr: Attr) {
-        self.literal.push(' ');
-        match attr {
-            Attr::Value(value) => {
-                self.write_value(value);
+        self.buf.push('>');
+        if !is_void_tag(&name) {
+            for node in body.nodes {
+                self.write_node(node);
             }
-            Attr::Keyed { key, value, .. } => {
-                self.literal.push_str(&key.to_string());
-                self.literal.push('=');
-                self.literal.push('"');
-                self.write_attr_value(value);
-                self.literal.push('"');
-            }
-        }
-    }
-
-    pub fn write_element(&mut self, el: Element) {
-        self.literal.push('<');
-        match el {
-            Element::OpeningClosing {
-                opening_tag,
-                children,
-                ..
-            } => {
-                let name = opening_tag.name.to_string();
-                self.literal.push_str(&name);
-                for attr in opening_tag.attrs {
-                    self.write_attribute(attr);
-                }
-                self.literal.push('>');
-                for child in children {
-                    match child {
-                        Node::Value(val) => {
-                            self.write_value(val);
-                        }
-                        Node::Element(el) => {
-                            self.write_element(el);
-                        }
-                    }
-                }
-                self.literal.push('<');
-                self.literal.push('/');
-                self.literal.push_str(&name);
-                self.literal.push('>');
-            }
-            Element::Void(VoidTag { name, attrs, .. }) => {
-                self.literal.push_str(&name.to_string());
-                for attr in attrs {
-                    self.write_attribute(attr);
-                }
-                self.literal.push('>');
-            }
+            self.buf.push('<');
+            self.buf.push('/');
+            self.buf.push_str(&name);
+            self.buf.push('>');
         }
     }
 
     pub fn write_node(&mut self, node: Node) {
         match node {
-            Node::Value(value) => self.write_value(value),
-            Node::Element(element) => self.write_element(element),
+            Node::Element(el) => self.write_element(el),
+            Node::Expr(expr) => self.write_expr(expr),
         }
     }
 
-    pub fn as_parts(&self) -> Vec<Part> {
+    pub fn as_imports(&self) -> TokenStream {
+        let imports = &self.imports;
+        quote! {
+            const _: () = {
+                #(_ = #imports!(__vy_import_marker);)*
+            }
+        }
+    }
+
+    pub fn into_parts(self) -> Vec<Part<'s>> {
         let mut parts = Vec::new();
         let mut cursor = 0;
 
-        for InsertAt(i, val) in &self.values {
-            assert!(*i >= cursor);
-            let slice = &self.literal[cursor..*i];
+        for (i, val) in self.values {
+            assert!(i >= cursor);
+            let slice = &self.buf[cursor..i];
             if !slice.is_empty() {
-                parts.push(Part::Str(slice.into()));
+                parts.push(Part::Str(slice));
             }
-            parts.push(Part::Expr(Cow::Borrowed(val)));
-            cursor = *i;
+            parts.push(Part::Expr(val));
+            cursor = i;
         }
 
-        let slice = &self.literal[cursor..];
+        let slice = &self.buf[cursor..];
         if !slice.is_empty() {
-            parts.push(Part::Str(slice.into()));
+            parts.push(Part::Str(slice));
         }
 
         parts
+    }
+}
+
+pub enum Part<'s> {
+    Str(&'s str),
+    Expr(Expr),
+}
+
+const fn num_to_variant(n: u8) -> Option<char> {
+    if n >= 1 && n <= 13 {
+        Some((b'A' + n - 1) as char)
+    } else {
+        None
+    }
+}
+
+fn wrap_branch(either: &Ident, count: u8, tokens: impl ToTokens) -> Block {
+    let variant_letter =
+        num_to_variant(count).expect("exceeded number of supported branches");
+    let variant = format_ident!("{}", variant_letter);
+
+    parse_quote!({
+        ::vy::#either::#variant(#tokens)
+    })
+}
+
+fn transform_branches(either: &Ident, mut count: u8, expr: &mut Expr) {
+    count += 1;
+    match expr {
+        Expr::Block(ExprBlock { block, .. }) => {
+            *block = wrap_branch(either, count, &block);
+        }
+        Expr::If(expr_if) => {
+            expr_if.then_branch =
+                wrap_branch(either, count, &expr_if.then_branch);
+
+            if let Some((_, else_branch)) = &mut expr_if.else_branch {
+                transform_branches(either, count, else_branch);
+            } else {
+                let unit: Expr = parse_quote!(());
+                // Create a new `else` tail branch
+                expr_if.else_branch = Some((
+                    Token![else](Span::call_site()),
+                    Box::new(Expr::Block(ExprBlock {
+                        attrs: vec![],
+                        label: None,
+                        block: wrap_branch(either, count + 1, unit),
+                    })),
+                ))
+            }
+        }
+        _ => {}
     }
 }

@@ -2,16 +2,38 @@ use alloc::string::String;
 
 use crate::IntoHtml;
 
-pub struct FromFn<F>(F);
+pub struct SizeHint(pub usize);
 
-impl<F: FnOnce(&mut String)> IntoHtml for FromFn<F> {
+impl IntoHtml for SizeHint {
     #[inline]
-    fn write_escaped(self, buf: &mut String) {
-        (self.0)(buf);
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, _: &mut String) {}
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0
     }
 }
 
-#[inline]
-pub fn from_fn<F: FnOnce(&mut String)>(f: F) -> FromFn<F> {
-    FromFn(f)
+pub struct FromFn<F: Fn(&mut String)>(pub F);
+
+impl<F: Fn(&mut String)> IntoHtml for FromFn<F> {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
+        self.0(buf)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        0
+    }
 }

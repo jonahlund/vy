@@ -1,5 +1,4 @@
 use alloc::string::String;
-use core::fmt::Write as _;
 
 use crate::IntoHtml;
 
@@ -34,27 +33,55 @@ pub fn escape(input: &str) -> String {
     output
 }
 
-pub struct Escape<T>(pub T);
-
 pub struct PreEscaped<T>(pub T);
 
 impl IntoHtml for PreEscaped<&str> {
     #[inline]
-    fn write_escaped(self, buf: &mut String) {
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
         buf.push_str(self.0);
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0.size_hint()
     }
 }
 
 impl IntoHtml for PreEscaped<String> {
     #[inline]
-    fn write_escaped(self, buf: &mut String) {
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
         buf.push_str(&self.0);
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0.size_hint()
     }
 }
 
-impl IntoHtml for PreEscaped<core::fmt::Arguments<'_>> {
+impl IntoHtml for PreEscaped<char> {
     #[inline]
-    fn write_escaped(self, buf: &mut String) {
-        let _ = buf.write_fmt(self.0);
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
+        buf.push(self.0);
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0.len_utf8()
     }
 }

@@ -6,9 +6,10 @@ edition = "2021"
 [features]
 default = ["std"]
 std = []
-either = ["dep:either"]
 
 [dependencies]
-either = { version = "1.13.0", optional = true }
-itoa = "1.0.14"
-ryu = "1.0.19"
+itoa = "1"
+ryu = "1"
+
+[dev-dependencies]
+vy = { path = "../" }
