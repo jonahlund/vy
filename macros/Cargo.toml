@@ -2,6 +2,13 @@
 name = "vy-macros"
 version = "0.2.0"
 edition = "2021"
+authors = ["Jonah Lund <jonahlund@proton.me>"]
+description = """
+A convenient and type-safe HTML templating library.
+"""
+repository = "https://github.com/JonahLund/vy"
+keywords = ["html", "macros", "template"]
+categories = ["template-engine", "web-programming"]
 license = "MIT"
 workspace = "../"
 
