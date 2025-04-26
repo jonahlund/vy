@@ -77,8 +77,8 @@ Escaping is done automatically, but can be opted out by wrapping a type with `Pr
 
 ## Performance
 
-The template system is optimized for efficiency:
+`vy` utilizes a few practices for fast rendering times:
 
 - **Pre-calculated sizing**: HTML output size is estimated before allocation.
 - **Single-allocation rendering**: Most templates render in one memory allocation.
-- **Zero-cost composition**: Uses tuple-based [`IntoHtml`] trait without closures.
+- **Zero-cost composition**: Macros expand to tuple-based [`IntoHtml`] types without closures.
