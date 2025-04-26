@@ -56,20 +56,20 @@ attribute := name['?'] '=' expression
 name := identifier | text
 ```
 
-### Key Design Choices
+### Key design choices
 
 - **Parenthesis-based**: Works with `rustfmt` formatting constraints.
 - **Reserved word handling**: Attributes like `type` and `for` use string syntax, e.g., `"type" = ".."` instead of `type = ".."`.
 - **Optional attributes**: `?` marks optional attributes (e.g., `disabled? = Some("")`).
 
-### Why This Syntax?
+### Why this syntax?
 
 The macro design balances several constraints:
 
 - Compatibility with Rust's syntax tree.
 - `rustfmt` compatibility (requires parenthesis syntax, e.g., `div!()` instead of `div!{}`).
 - Natural HTML-like authoring experience.
-- Compile-time validation opportunities.
+- Compile-time validation.
 
 ## Escaping
 
