@@ -10,7 +10,7 @@ use syn::{
 
 use crate::known::{is_known_tag, is_void_tag};
 
-/// A single ident `foo` or a string literal `"bar"`.
+/// A single ident `foo`, or a string literal `"bar"`.
 pub enum AttrName {
     Ident(Ident),
     LitStr(LitStr),

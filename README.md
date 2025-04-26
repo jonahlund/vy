@@ -1,15 +1,15 @@
 # vy
 
-`vy` is a fast and convenient HTML templating library for Rust.
+A convenient, type-safe HTML templating library for Rust
 
 ## Usage
 
-Here is an example that shows how to create a typical HTML page:
+Create a typical HTML page:
 
-``` rust
-use vy::*;
+```rust
+use vy::prelude::*;
 
-fn page(content: impl ToHtml) -> impl ToHtml {
+fn page(content: impl IntoHtml) -> impl IntoHtml {
     (
         DOCTYPE,
         html!(
@@ -23,33 +23,52 @@ fn page(content: impl ToHtml) -> impl ToHtml {
                 meta!(name = "description", content = ""),
                 link!(rel = "icon", href = "favicon.ico")
             ),
-            body!(h1!("My Heading"), content)
+            body!(
+                h1!("My Heading"),
+                content
+            )
         ),
     )
 }
 ```
 
-A few things noteworthy things you might've noticed:
+Key features to note:
 
-- **All tags are macros.** There is no HTML-tree parsing (although there is a level of speculative parsing to improve performance).
-- **Attributes are written inside the macro body.** This is rather unique to this crate, but is necessary since each tag is a self-contained macro invocation.
-- **No container macro.** As hinted above, you do not have to wrap your HTML inside a container macro, like `html!(..)`. In fact, the [`html!`] macro will simply return the literal `<html>` tag.
+- **Tag macros**: All HTML elements are created through dedicated macros
+- **Inline attributes**: Attributes are declared directly within macro bodies using `key = value` syntax
+- **Zero wrapping**: No need for container macros – elements compose naturally
+- **Void element support**: Self-closing tags like `<meta>` handled automatically
 
 ## Syntax
 
-The full grammar is rather simple:
+The macro grammar follows this pattern:
 
-``` text
-spec := [attr],* [expr],*
+```text
+element := [attribute],* [content],*
 
-attr := attr_name['?'] '=' expr
-attr_name := identifier | text
+content := expression
+attribute := name['?'] '=' expression
+name := identifier | text
 ```
 
-The syntax is the same for all tags, although some tags have certain restrictions, such as void tags, which may only contain attributes.
+### Key Design Choices
 
-Why this particular syntax was chosen isn't really a coincidence, rather, it was chosen to conform with Rust's syntax parser. In other words, tools like `rustfmt` will actually format the code inside macro bodies (assuming you are using parentheses `div!()` and not curly brackets `div!{}`). This is also the reason why certain attribute keywords are disallowed, such as `type` or `for`.
+- **Parenthesis-based**: Works with `rustfmt` formatting constraints
+- **Reserved word handling**: Attributes like `type` and `for` use string syntax, e.g. `"type" = ".."` instead of `type = ".."`
+- **Optional attributes**: `?` marks optional attributes, e.g. `disabled? = Some("")`
+
+### Why This Syntax?
+
+The macro design balances several constraints:
+1. Compatibility with Rust's syntax tree
+2. `rustfmt` compatibility (requires parenthesis syntax, e.g. `div!()` instead of `div!{}`)
+3. Natural HTML-like authoring experience
+4. Compile-time validation opportunities
 
 ## Performance
 
-The macros produce a tuple type implementing [`ToHtml`], which do not involve closures (nor eager allocations). This in turn means that the total size of the HTML can be estimated upfront, thus minimizing reallocations. In fact, in most cases the written HTML will fit inside a single allocation.
+The template system is optimized for efficiency:
+
+- **Pre-calculated sizing**: HTML output size estimation happens before any allocation
+- **Single-allocation rendering**: Most documents render in one memory allocation
+- **Zero-cost composition**: Uses tuple-based [`IntoHtml`] trait without closures

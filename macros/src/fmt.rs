@@ -3,7 +3,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, Block, Expr, ExprBlock, ExprGroup, ExprLit, Ident, Lit, Token,
 };
-use vy_core::IntoHtml;
+use vy_core::{Buffer, IntoHtml};
 
 use crate::{
     ast::{Attr, Element, Node},
@@ -11,13 +11,13 @@ use crate::{
 };
 
 pub struct Serializer<'s> {
-    buf: &'s mut String,
+    buf: &'s mut Buffer,
     values: Vec<(usize, Expr)>,
     imports: Vec<Ident>,
 }
 
 impl<'s> Serializer<'s> {
-    pub fn new(buf: &'s mut String) -> Self {
+    pub fn new(buf: &'s mut Buffer) -> Self {
         Self {
             buf,
             values: Vec::new(),
@@ -147,7 +147,7 @@ impl<'s> Serializer<'s> {
 
         for (i, val) in self.values {
             assert!(i >= cursor);
-            let slice = &self.buf[cursor..i];
+            let slice = &self.buf.as_str()[cursor..i];
             if !slice.is_empty() {
                 parts.push(Part::Str(slice));
             }
@@ -155,7 +155,7 @@ impl<'s> Serializer<'s> {
             cursor = i;
         }
 
-        let slice = &self.buf[cursor..];
+        let slice = &self.buf.as_str()[cursor..];
         if !slice.is_empty() {
             parts.push(Part::Str(slice));
         }
@@ -170,7 +170,7 @@ pub enum Part<'s> {
 }
 
 const fn num_to_variant(n: u8) -> Option<char> {
-    if n >= 1 && n <= 13 {
+    if n >= 1 && n <= 9 {
         Some((b'A' + n - 1) as char)
     } else {
         None

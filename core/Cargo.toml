@@ -2,13 +2,14 @@
 name = "vy-core"
 version = "0.2.0"
 edition = "2021"
+license = "MIT"
+workspace = "../"
 
 [features]
-default = ["std"]
 std = []
 
 [dependencies]
-itoa = "1"
+itoap = "1.0.1"
 ryu = "1"
 
 [dev-dependencies]

@@ -1,6 +1,15 @@
+#![doc = include_str!("../README.md")]
+
 extern crate self as vy;
 
-pub use vy_core::{escape::PreEscaped, *};
+pub mod prelude {
+    pub use vy_core::{either::*, escape::PreEscaped, *};
+    pub use vy_macros::*;
+
+    pub use crate::DOCTYPE;
+}
+
+pub use vy_core::{either::*, escape::PreEscaped, *};
 pub use vy_macros::*;
 
 pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
@@ -71,7 +80,10 @@ mod tests {
     }
 
     #[test]
-    fn for_loop() {
-        assert_eq!(div!().into_string(), "");
+    fn attributes() {
+        assert_eq!(
+            div!(class = "foo bar", id = "baz").into_string(),
+            "<div class=\"foo bar\" id=\"baz\"></div>"
+        );
     }
 }

@@ -2,6 +2,8 @@
 name = "vy-macros"
 version = "0.2.0"
 edition = "2021"
+license = "MIT"
+workspace = "../"
 
 [lib]
 proc-macro = true
@@ -13,4 +15,4 @@ syn = { version = "2", features = ["full"] }
 vy-core = { path = "../core", version = "0.2.0" }
 
 [dev-dependencies]
-vy = { path = ".." }
+vy = { path = "../" }

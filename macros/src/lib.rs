@@ -6,6 +6,7 @@ mod known;
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
 use syn::{parse::Parse, parse_macro_input};
+use vy_core::Buffer;
 
 use self::{
     ast::{Element, ElementBody, ElementHead},
@@ -53,7 +54,7 @@ fn inner(name: &str, input: TokenStream) -> TokenStream {
         Err(err) => return err.to_compile_error().into(),
     };
 
-    let mut text = String::new();
+    let mut text = Buffer::new();
     let mut ser = Serializer::new(&mut text);
     ser.write_element(el);
 
