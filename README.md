@@ -1,5 +1,10 @@
 # vy
 
+[![crates.io](https://img.shields.io/crates/v/vy.svg)](https://crates.io/crates/vy)
+[![docs.rs](https://docs.rs/vy/badge.svg)](https://docs.rs/vy)
+![build](https://github.com/jonahlund/vy/actions/workflows/ci.yml/badge.svg)
+![license: MIT](https://img.shields.io/crates/l/vy.svg)
+
 A convenient, type-safe HTML templating library for Rust
 
 ## Usage
