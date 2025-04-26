@@ -1,112 +1,217 @@
-use core::fmt::{Result, Write};
+use proc_macro2::{Span, TokenStream};
+use quote::{format_ident, quote, ToTokens};
+use syn::{
+    parse_quote, Block, Expr, ExprBlock, ExprGroup, ExprLit, Ident, Lit, Token,
+};
+use vy_core::{Buffer, IntoHtml};
 
-use quote::ToTokens;
-use syn::{Expr, ExprLit};
-use vy_core::Render;
+use crate::{
+    ast::{Attr, Element, Node},
+    known::is_void_tag,
+};
 
-use crate::ast;
-
-pub struct Formatter<'a, 'b> {
-    pub buf: &'a mut String,
-    pub args: &'a mut Vec<(usize, &'b dyn ToTokens)>,
+pub struct Serializer<'s> {
+    buf: &'s mut Buffer,
+    values: Vec<(usize, Expr)>,
+    imports: Vec<Ident>,
 }
 
-impl Write for Formatter<'_, '_> {
-    #[inline]
-    fn write_str(&mut self, s: &str) -> Result {
-        self.buf.write_str(s)
+impl<'s> Serializer<'s> {
+    pub fn new(buf: &'s mut Buffer) -> Self {
+        Self {
+            buf,
+            values: Vec::new(),
+            imports: Vec::new(),
+        }
+    }
+
+    pub fn write_expr(&mut self, mut expr: Expr) {
+        match expr {
+            Expr::Group(ExprGroup { attrs, expr, .. }) if attrs.is_empty() => {
+                self.write_expr(*expr);
+            }
+            Expr::If(_) => {
+                let mut count = 1;
+                let mut current = Some(&expr);
+                while let Some(Expr::If(node)) = current {
+                    current =
+                        node.else_branch.as_ref().map(|(_, expr)| &**expr);
+                    count += 1;
+                }
+
+                let either_suffix =
+                    if count > 2 { Some(count) } else { None }.into_string();
+                let either = format_ident!("Either{either_suffix}");
+
+                transform_branches(&either, 0, &mut expr);
+
+                self.values.push((self.buf.len(), expr));
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Str(lit_str),
+            }) if attrs.is_empty() => {
+                lit_str.value().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Char(lit_char),
+            }) if attrs.is_empty() => {
+                lit_char.value().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Int(lit_int),
+            }) if attrs.is_empty() => {
+                lit_int.base10_digits().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Float(lit_float),
+            }) if attrs.is_empty() => {
+                lit_float.base10_digits().escape_and_write(self.buf);
+            }
+            Expr::Lit(ExprLit {
+                attrs,
+                lit: Lit::Bool(lit_bool),
+            }) if attrs.is_empty() => {
+                lit_bool.value().escape_and_write(self.buf);
+            }
+            _ => {
+                self.values.push((self.buf.len(), expr));
+            }
+        }
+    }
+
+    pub fn write_attr(&mut self, attr: Attr) {
+        let name = attr.name.to_string();
+        if attr.is_optional() {
+            let sep_name_eq = String::from(' ') + &name + "=\"";
+            let value = &attr.value;
+
+            self.write_expr(parse_quote! {
+                ::core::option::Option::map(
+                    #value,
+                    |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped('"'))
+                )
+            });
+        } else {
+            self.buf.push(' ');
+            self.buf.push_str(&name);
+            self.buf.push('=');
+            self.buf.push('"');
+            self.write_expr(attr.value);
+            self.buf.push('"');
+        }
+    }
+
+    pub fn write_element(&mut self, Element(head, body): Element) {
+        let name = head.name.to_string();
+        self.imports.push(head.name);
+        self.buf.push('<');
+        self.buf.push_str(&name);
+        for attr in body.attrs {
+            self.write_attr(attr);
+        }
+        self.buf.push('>');
+        if !is_void_tag(&name) {
+            for node in body.nodes {
+                self.write_node(node);
+            }
+            self.buf.push('<');
+            self.buf.push('/');
+            self.buf.push_str(&name);
+            self.buf.push('>');
+        }
+    }
+
+    pub fn write_node(&mut self, node: Node) {
+        match node {
+            Node::Element(el) => self.write_element(el),
+            Node::Expr(expr) => self.write_expr(expr),
+        }
+    }
+
+    pub fn as_imports(&self) -> TokenStream {
+        let imports = &self.imports;
+        quote! {
+            const _: () = {
+                #(_ = #imports!(__vy_import_marker);)*
+            }
+        }
+    }
+
+    pub fn into_parts(self) -> Vec<Part<'s>> {
+        let mut parts = Vec::new();
+        let mut cursor = 0;
+
+        for (i, val) in self.values {
+            assert!(i >= cursor);
+            let slice = &self.buf.as_str()[cursor..i];
+            if !slice.is_empty() {
+                parts.push(Part::Str(slice));
+            }
+            parts.push(Part::Expr(val));
+            cursor = i;
+        }
+
+        let slice = &self.buf.as_str()[cursor..];
+        if !slice.is_empty() {
+            parts.push(Part::Str(slice));
+        }
+
+        parts
     }
 }
 
-impl<'a, 'b> Formatter<'a, 'b> {
-    #[inline]
-    pub fn new(
-        buf: &'a mut String,
-        args: &'a mut Vec<(usize, &'b dyn ToTokens)>,
-    ) -> Self {
-        Self { buf, args }
-    }
+pub enum Part<'s> {
+    Str(&'s str),
+    Expr(Expr),
+}
 
-    #[inline]
-    pub fn write_ident(&mut self, i: &ast::DashIdent) {
-        let _ = write!(self, "{}", i);
+const fn num_to_variant(n: u8) -> Option<char> {
+    if n >= 1 && n <= 9 {
+        Some((b'A' + n - 1) as char)
+    } else {
+        None
     }
+}
 
-    #[inline]
-    pub fn write_doctype(&mut self, _: &ast::Doctype) {
-        let _ = self.write_str("<!DOCTYPE html>");
-    }
+fn wrap_branch(either: &Ident, count: u8, tokens: impl ToTokens) -> Block {
+    let variant_letter =
+        num_to_variant(count).expect("exceeded number of supported branches");
+    let variant = format_ident!("{}", variant_letter);
 
-    pub fn write_expr(&mut self, e: &'b Expr) {
-        if let Expr::Lit(ExprLit { attrs, lit }) = e {
-            if attrs.is_empty() {
-                match lit {
-                    syn::Lit::Str(lit_str) => {
-                        return lit_str.value().render_to(self.buf);
-                    }
-                    syn::Lit::Char(lit_char) => {
-                        return lit_char.value().render_to(self.buf);
-                    }
-                    syn::Lit::Int(lit_int) => {
-                        return lit_int.base10_digits().render_to(self.buf);
-                    }
-                    syn::Lit::Float(lit_float) => {
-                        return lit_float.base10_digits().render_to(self.buf);
-                    }
-                    syn::Lit::Bool(lit_bool) => {
-                        return lit_bool.value().render_to(self.buf);
-                    }
-                    _ => {}
-                }
+    parse_quote!({
+        ::vy::#either::#variant(#tokens)
+    })
+}
+
+fn transform_branches(either: &Ident, mut count: u8, expr: &mut Expr) {
+    count += 1;
+    match expr {
+        Expr::Block(ExprBlock { block, .. }) => {
+            *block = wrap_branch(either, count, &block);
+        }
+        Expr::If(expr_if) => {
+            expr_if.then_branch =
+                wrap_branch(either, count, &expr_if.then_branch);
+
+            if let Some((_, else_branch)) = &mut expr_if.else_branch {
+                transform_branches(either, count, else_branch);
+            } else {
+                let unit: Expr = parse_quote!(());
+                // Create a new `else` tail branch
+                expr_if.else_branch = Some((
+                    Token![else](Span::call_site()),
+                    Box::new(Expr::Block(ExprBlock {
+                        attrs: vec![],
+                        label: None,
+                        block: wrap_branch(either, count + 1, unit),
+                    })),
+                ))
             }
         }
-        self.args.push((self.buf.len(), e));
-    }
-
-    #[inline]
-    pub fn write_value(&mut self, v: &'b ast::Value) {
-        match v {
-            ast::Value::LitStr(lit_str) => {
-                lit_str.value().render_to(self.buf);
-            }
-            ast::Value::Expr(expr) => self.write_expr(expr),
-        }
-    }
-
-    pub fn write_attr(&mut self, a: &'b ast::Attr) {
-        self.write_ident(&a.key);
-        let _ = self.write_char('=');
-        let _ = self.write_char('"');
-        self.write_value(&a.value);
-        let _ = self.write_char('"');
-    }
-
-    pub fn write_tag(&mut self, t: &'b ast::Tag) {
-        match t {
-            ast::Tag::Opening { name, attrs, .. } => {
-                let _ = self.write_char('<');
-                self.write_ident(name);
-                for attr in attrs {
-                    let _ = self.write_char(' ');
-                    self.write_attr(attr);
-                }
-                let _ = self.write_char('>');
-            }
-            ast::Tag::Closing { name, .. } => {
-                let _ = self.write_char('<');
-                let _ = self.write_char('/');
-                self.write_ident(name);
-                let _ = self.write_char('>');
-            }
-        }
-    }
-
-    #[inline]
-    pub fn write_node(&mut self, n: &'b ast::Node) {
-        match n {
-            ast::Node::Doctype(d) => self.write_doctype(d),
-            ast::Node::Tag(t) => self.write_tag(t),
-            ast::Node::Value(v) => self.write_value(v),
-        }
+        _ => {}
     }
 }

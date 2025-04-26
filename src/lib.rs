@@ -1,133 +1,89 @@
-//! Fast and minimal HTML templating macros.
-
-#![cfg_attr(not(feature = "std"), no_std)]
+#![doc = include_str!("../README.md")]
 
 extern crate self as vy;
 
-pub use vy_core::{PreEscaped, Render};
-/// Creates a renderable type.
-///
-/// This avoids allocating until [`render`] is called, which makes it
-/// suitable to use whenever you are simply passing along the result for
-/// further rendering.
-///
-/// [`render`]: crate::Render
-///
-/// # Example
-///
-/// ```
-/// fn button(label: impl vy::Render) -> impl vy::Render {
-///     vy::lazy! {
-///         <button>{label}</button>
-///     }
-/// }
-/// ```
-#[doc(inline)]
-pub use vy_macros::lazy;
-/// Creates an HTML string literal.
-///
-/// Passing any non literal values will cause a compilation error.
-#[doc(inline)]
-pub use vy_macros::lit;
-/// Writes HTML to a [`String`].
-///
-/// This macro eagerly writes HTML to a [`String`].
-#[doc(inline)]
-pub use vy_macros::write;
+pub mod prelude {
+    pub use vy_core::{either::*, escape::PreEscaped, *};
+    pub use vy_macros::*;
 
-/// Creates a [`String`] with the HTML content.
-///
-/// This is a convenience macro over `vy::lazy!(..).render()`.
-#[macro_export]
-macro_rules! render {
-    ($($arg:tt)*) => {
-        vy::Render::render(vy::lazy!($($arg)*))
-    };
+    pub use crate::DOCTYPE;
 }
 
-/// Inline script tag
-///
-/// # Usage
-/// ```
-/// let page = vy::render! {
-///    {vy::script!(
-///        console.log("Hello,");
-///        console.log("world!");
-///    )}
-/// };
-/// assert_eq!(
-///     page,
-///     r#"<script>console.log("Hello,"); console.log("world!");</script>"#
-/// );
-/// ```
-#[macro_export]
-macro_rules! script {
-    ($($t:tt)*) => {
-        vy::PreEscaped(concat!("<script>", stringify!($($t)*), "</script>"))
-    };
-}
+pub use vy_core::{either::*, escape::PreEscaped, *};
+pub use vy_macros::*;
 
-/// Inline style tag
-///
-/// # Usage
-///
-/// ```
-/// let page = vy::render! {
-///    {vy::style!(
-///        .red { color: red }
-///        .green { color: green }
-///    )}
-/// };
-/// assert_eq!(
-///     page,
-///     "<style>.red { color: red }.green { color: green }</style>"
-/// );
-/// ```
-#[macro_export]
-macro_rules! style {
-    ($($t:tt)*) => {
-        vy::PreEscaped(concat!("<style>", stringify!($($t)*), "</style>"))
-    };
-}
+pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
 #[cfg(test)]
 mod tests {
+    use super::*;
+
     #[test]
-    fn simple_tags() {
-        assert_eq!(vy::render!(<foo></foo>), "<foo></foo>");
+    fn empty_single_tags() {
+        assert_eq!(a!().into_string(), "<a></a>");
+        assert_eq!(header!().into_string(), "<header></header>");
+        assert_eq!(fieldset!().into_string(), "<fieldset></fieldset>");
+        assert_eq!(div!().into_string(), "<div></div>");
+        assert_eq!(footer!().into_string(), "<footer></footer>");
+        assert_eq!(h1!().into_string(), "<h1></h1>");
+    }
+
+    #[test]
+    fn empty_multi_tags() {
+        assert_eq!((a!(), header!()).into_string(), "<a></a><header></header>");
         assert_eq!(
-            vy::render!(<foo></foo><bar></bar>),
-            "<foo></foo><bar></bar>"
+            (div!(), span!(), span!(), span!(), div!()).into_string(),
+            "<div></div><span></span><span></span><span></span><div></div>"
         );
     }
 
     #[test]
-    fn simple_tags_with_attributes() {
+    fn nested_single_tags() {
+        assert_eq!(div!(span!()).into_string(), "<div><span></span></div>");
+        assert_eq!(span!(h1!()).into_string(), "<span><h1></h1></span>");
         assert_eq!(
-            vy::render!(<foo bar="baz"></foo>),
-            "<foo bar=\"baz\"></foo>"
+            html!(body!(div!())).into_string(),
+            "<html><body><div></div></body></html>"
         );
         assert_eq!(
-            vy::render!(<foo bar="baz" qux={false}></foo>),
-            "<foo bar=\"baz\" qux=\"false\"></foo>"
-        );
-    }
-
-    #[test]
-    fn nested_tags() {
-        assert_eq!(
-            vy::render!(<foo><bar></bar></foo>),
-            "<foo><bar></bar></foo>"
-        );
-        assert_eq!(
-            vy::render!(<foo><bar><baz></baz></bar></foo><qux></qux>),
-            "<foo><bar><baz></baz></bar></foo><qux></qux>"
+            div!(div!(div!(div!(span!(div!()))))).into_string(),
+            "<div><div><div><div><span><div></div></span></div></div></div></\
+             div>"
         );
     }
 
     #[test]
-    fn self_closing_tags() {
-        assert_eq!(vy::render!(<foo />), "<foo>");
-        assert_eq!(vy::render!(<foo /><bar />), "<foo><bar>");
+    fn nested_multi_tags() {
+        assert_eq!(
+            html!(head!(title!()), body!(div!(div!(div!()), div!(span!()))))
+                .into_string(),
+            "<html><head><title></title></head><body><div><div><div></div></\
+             div><div><span></span></div></div></body></html>"
+        );
+    }
+
+    #[test]
+    fn void_tags() {
+        assert_eq!(area!().into_string(), "<area>");
+        assert_eq!(base!().into_string(), "<base>");
+        assert_eq!(br!().into_string(), "<br>");
+        assert_eq!(col!().into_string(), "<col>");
+        assert_eq!(embed!().into_string(), "<embed>");
+        assert_eq!(hr!().into_string(), "<hr>");
+        assert_eq!(img!().into_string(), "<img>");
+        assert_eq!(input!().into_string(), "<input>");
+        assert_eq!(link!().into_string(), "<link>");
+        assert_eq!(meta!().into_string(), "<meta>");
+        assert_eq!(source!().into_string(), "<source>");
+        assert_eq!(track!().into_string(), "<track>");
+        assert_eq!(wbr!().into_string(), "<wbr>");
+    }
+
+    #[test]
+    fn attributes() {
+        assert_eq!(
+            div!(class = "foo bar", id = "baz").into_string(),
+            "<div class=\"foo bar\" id=\"baz\"></div>"
+        );
     }
 }

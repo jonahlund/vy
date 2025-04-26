@@ -1,17 +1,16 @@
 [package]
 name = "vy-core"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2021"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = "Fast and minimal HTML templating macros in Rust"
-repository = "https://github.com/JonahLund/vy"
 license = "MIT"
-rust-version = "1.70"
+workspace = "../"
+
+[features]
+std = []
 
 [dependencies]
 itoap = "1.0.1"
-ryu = "1.0.18"
+ryu = "1"
 
-[features]
-default = ["std"]
-std = []
+[dev-dependencies]
+vy = { path = "../" }

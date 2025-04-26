@@ -1,128 +1,310 @@
-#![cfg_attr(not(feature = "std"), no_std)]
+#![no_std]
 
 extern crate alloc;
+#[cfg(feature = "std")]
+extern crate std;
 
-#[macro_use]
+mod buffer;
+pub mod either;
+pub mod escape;
 mod helpers;
-mod escape;
 
 use alloc::string::String;
 
-pub use escape::*;
+pub use self::buffer::Buffer;
+use self::escape::escape_into;
 
-/// A type that can be rendered to a [`String`].
-///
-/// Some types implementing this trait (`&str`, `char`) are escaped by default.
-/// To render types unescaped, use [`PreEscaped`].
-///
-/// [`PreEscaped`]: crate::PreEscaped
-pub trait Render {
-    fn render_to(self, buf: &mut String);
+/// A type that can be represented as HTML.
+pub trait IntoHtml {
+    /// Converts this value into HTML by producing a type that implements
+    /// [`IntoHtml`].
+    ///
+    /// This method enables composition of HTML structures by delegating
+    /// rendering to the returned value. Use it to build nested HTML
+    /// elements, combine components, or leverage existing [`IntoHtml`]
+    /// implementations.
+    ///
+    /// # Examples
+    ///
+    /// Compose nested HTML elements using macros:
+    ///
+    /// ```
+    /// # use vy::*;
+    /// struct Article {
+    ///     title: String,
+    ///     content: String,
+    ///     author: String,
+    /// }
+    ///
+    /// impl IntoHtml for Article {
+    ///     fn into_html(self) -> impl IntoHtml {
+    ///         article!(
+    ///             h1!(self.title),
+    ///             p!(class = "content", self.content),
+    ///             footer!("Written by ", self.author)
+    ///         )
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// Chain multiple implementations through delegation:
+    ///
+    /// ```
+    /// # use vy::*;
+    /// # struct Article;
+    /// # impl IntoHtml for Article {
+    /// #     fn into_html(self) -> impl IntoHtml {}
+    /// # }
+    /// struct ArticlePage {
+    ///     title: String,
+    ///     articles: Vec<Article>,
+    /// }
+    ///
+    /// impl IntoHtml for ArticlePage {
+    ///     fn into_html(self) -> impl IntoHtml {
+    ///         html!(head!(title!(self.title)), body!(self.articles))
+    ///     }
+    /// }
+    /// ```
+    ///
+    /// For "leaf" types (elements that render directly without children, like
+    /// primitive values), **always return `self`** to avoid infinite recursion:
+    ///
+    /// ```
+    /// # use vy::{prelude::*, escape::escape_into};
+    /// struct TextNode(String);
+    ///
+    /// impl IntoHtml for TextNode {
+    ///     fn into_html(self) -> impl IntoHtml {
+    ///         // Leaf type returns itself to terminate the rendering chain
+    ///         self
+    ///     }
+    ///
+    ///     fn escape_and_write(self, buf: &mut Buffer) {
+    ///         escape_into(buf, &self.0);
+    ///     }
+    ///
+    ///     fn size_hint(&self) -> usize {
+    ///         self.0.len()
+    ///     }
+    /// }
+    /// ```
+    fn into_html(self) -> impl IntoHtml;
 
+    /// Writes the HTML into the provided [`String`].
     #[inline]
-    fn render(self) -> String
+    fn escape_and_write(self, buf: &mut Buffer)
     where
         Self: Sized,
     {
-        let mut buf = String::new();
-        self.render_to(&mut buf);
-        buf
+        self.into_html().escape_and_write(buf);
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        0
+    }
+
+    /// Allocates a new [`String`] containing the HTML.
+    fn into_string(self) -> String
+    where
+        Self: Sized,
+    {
+        let html = self.into_html();
+        let size = html.size_hint();
+        let mut buf = Buffer::with_capacity(size + (size / 10));
+        html.escape_and_write(&mut buf);
+        buf.into_string()
     }
 }
 
-via_itoap! {
-    isize i8 i16 i32 i64 i128
-    usize u8 u16 u32 u64 u128
-}
-
-via_ryu! { f32 f64 }
-
-impl Render for &str {
+impl IntoHtml for &str {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        escape_into(self, buf)
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        escape_into(buf, self)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.len()
     }
 }
 
-impl Render for String {
+impl IntoHtml for char {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_str().render_to(buf)
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        escape_into(buf, self.encode_utf8(&mut [0; 4]));
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.len_utf8()
     }
 }
 
-impl Render for &String {
+impl IntoHtml for String {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_str().render_to(buf)
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        escape_into(buf, &self)
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.len()
     }
 }
 
-#[cfg(feature = "std")]
-impl Render for Box<str> {
+impl IntoHtml for &String {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        self.as_ref().render_to(buf);
+    fn into_html(self) -> impl IntoHtml {
+        self.as_str()
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.len()
     }
 }
 
-impl Render for char {
+impl IntoHtml for bool {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        escape_into(self.encode_utf8(&mut [0; 4]), buf);
+    fn into_html(self) -> impl IntoHtml {
+        if self {
+            "true"
+        } else {
+            "false"
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        5
     }
 }
 
-impl Render for bool {
+impl<T: IntoHtml> IntoHtml for Option<T> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        buf.push_str(if self { "true" } else { "false" })
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        if let Some(x) = self {
+            x.escape_and_write(buf)
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        if let Some(x) = self {
+            x.size_hint()
+        } else {
+            0
+        }
     }
 }
 
-impl<F: FnOnce(&mut String)> Render for F {
+impl IntoHtml for () {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, _: &mut Buffer) {}
+}
+
+impl<F: FnOnce(&mut Buffer)> IntoHtml for F {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
         (self)(buf)
     }
 }
 
-impl<T: Render> Render for Option<T> {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
-        if let Some(x) = self {
-            x.render_to(buf)
-        }
-    }
-}
-
-impl<T: Render, const N: usize> Render for [T; N] {
-    #[inline]
-    fn render_to(self, buf: &mut String) {
-        for x in self {
-            x.render_to(buf)
-        }
-    }
-}
-
-impl<T, I: Iterator, F> Render for core::iter::Map<I, F>
+impl<B: IntoHtml, I: ExactSizeIterator, F> IntoHtml for core::iter::Map<I, F>
 where
-    T: Render,
-    F: FnMut(I::Item) -> T,
+    F: FnMut(I::Item) -> B,
 {
     #[inline]
-    fn render_to(self, buf: &mut String) {
-        for x in self {
-            x.render_to(buf)
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        let len = self.len();
+        for (i, x) in self.enumerate() {
+            if i == 0 {
+                buf.reserve(len * x.size_hint());
+            }
+            x.escape_and_write(buf);
         }
     }
 }
 
-impl<T: Render> Render for alloc::vec::IntoIter<T> {
+impl<T: IntoHtml> IntoHtml for alloc::vec::Vec<T> {
     #[inline]
-    fn render_to(self, buf: &mut String) {
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
         for x in self {
-            x.render_to(buf)
+            x.escape_and_write(buf);
         }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        let mut n = 0;
+        for x in self {
+            n += x.size_hint();
+        }
+        n
+    }
+}
+
+impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        for x in self {
+            x.escape_and_write(buf);
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        let mut n = 0;
+        for x in self {
+            n += x.size_hint();
+        }
+        n
     }
 }
