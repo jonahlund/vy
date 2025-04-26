@@ -65,10 +65,11 @@ name := identifier | text
 ### Why This Syntax?
 
 The macro design balances several constraints:
-1. Compatibility with Rust's syntax tree.
-2. `rustfmt` compatibility (requires parenthesis syntax, e.g., `div!()` instead of `div!{}`).
-3. Natural HTML-like authoring experience.
-4. Compile-time validation opportunities.
+
+- Compatibility with Rust's syntax tree.
+- `rustfmt` compatibility (requires parenthesis syntax, e.g., `div!()` instead of `div!{}`).
+- Natural HTML-like authoring experience.
+- Compile-time validation opportunities.
 
 ## Escaping
 
