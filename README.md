@@ -70,10 +70,14 @@ The macro design balances several constraints:
 3. Natural HTML-like authoring experience.
 4. Compile-time validation opportunities.
 
+## Escaping
+
+Escaping is done automatically, but can be opted out by wrapping a type with `PreEscaped(..)`.
+
 ## Performance
 
 The template system is optimized for efficiency:
 
 - **Pre-calculated sizing**: HTML output size is estimated before allocation.
-- **Single-allocation rendering**: Most documents render in one memory allocation.
+- **Single-allocation rendering**: Most templates render in one memory allocation.
 - **Zero-cost composition**: Uses tuple-based [`IntoHtml`] trait without closures.
