@@ -34,10 +34,10 @@ fn page(content: impl IntoHtml) -> impl IntoHtml {
 
 Key features to note:
 
-- **Tag macros**: All HTML elements are created through dedicated macros
-- **Inline attributes**: Attributes are declared directly within macro bodies using `key = value` syntax
-- **Zero wrapping**: No need for container macros – elements compose naturally
-- **Void element support**: Self-closing tags like `<meta>` handled automatically
+- **Tag macros**: HTML elements are created using dedicated macros.
+- **Inline attributes**: Attributes are declared directly within macro bodies using `key = value` syntax.
+- **Zero wrapping**: No need for container macros – elements compose naturally.
+- **Void element support**: Automatically handles self-closing tags like `<meta>`, `<img>`, etc.
 
 ## Syntax
 
@@ -53,22 +53,22 @@ name := identifier | text
 
 ### Key Design Choices
 
-- **Parenthesis-based**: Works with `rustfmt` formatting constraints
-- **Reserved word handling**: Attributes like `type` and `for` use string syntax, e.g. `"type" = ".."` instead of `type = ".."`
-- **Optional attributes**: `?` marks optional attributes, e.g. `disabled? = Some("")`
+- **Parenthesis-based**: Works with `rustfmt` formatting constraints.
+- **Reserved word handling**: Attributes like `type` and `for` use string syntax, e.g., `"type" = ".."` instead of `type = ".."`.
+- **Optional attributes**: `?` marks optional attributes (e.g., `disabled? = Some("")`).
 
 ### Why This Syntax?
 
 The macro design balances several constraints:
-1. Compatibility with Rust's syntax tree
-2. `rustfmt` compatibility (requires parenthesis syntax, e.g. `div!()` instead of `div!{}`)
-3. Natural HTML-like authoring experience
-4. Compile-time validation opportunities
+1. Compatibility with Rust's syntax tree.
+2. `rustfmt` compatibility (requires parenthesis syntax, e.g., `div!()` instead of `div!{}`).
+3. Natural HTML-like authoring experience.
+4. Compile-time validation opportunities.
 
 ## Performance
 
 The template system is optimized for efficiency:
 
-- **Pre-calculated sizing**: HTML output size estimation happens before any allocation
-- **Single-allocation rendering**: Most documents render in one memory allocation
-- **Zero-cost composition**: Uses tuple-based [`IntoHtml`] trait without closures
+- **Pre-calculated sizing**: HTML output size is estimated before allocation.
+- **Single-allocation rendering**: Most documents render in one memory allocation.
+- **Zero-cost composition**: Uses tuple-based [`IntoHtml`] trait without closures.
