@@ -63,6 +63,11 @@ impl IntoHtml for PreEscaped<String> {
     fn escape_and_write(self, buf: &mut Buffer) {
         buf.push_str(&self.0);
     }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0.len()
+    }
 }
 
 impl IntoHtml for PreEscaped<char> {
