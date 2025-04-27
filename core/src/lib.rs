@@ -91,7 +91,7 @@ pub trait IntoHtml {
     /// ```
     fn into_html(self) -> impl IntoHtml;
 
-    /// Writes the HTML into the provided [`String`].
+    /// Writes the HTML into the provided [`Buffer`].
     #[inline]
     fn escape_and_write(self, buf: &mut Buffer)
     where
