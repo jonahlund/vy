@@ -4,11 +4,12 @@ members = ["core", "macros"]
 
 [package]
 name = "vy"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = """
-A convenient and type-safe HTML templating library.
+h1!("Rust HTML macros")
+p!("Write type-safe HTML in Rust")
 """
 repository = "https://github.com/JonahLund/vy"
 keywords = ["html", "macros", "template"]
@@ -20,5 +21,5 @@ default = ["std"]
 std = ["vy-core/std"]
 
 [dependencies]
-vy-core = { path = "./core", version = "0.2.0" }
-vy-macros = { path = "./macros", version = "0.2.0" }
+vy-core = { path = "./core", version = "0.3.0" }
+vy-macros = { path = "./macros", version = "0.3.0" }

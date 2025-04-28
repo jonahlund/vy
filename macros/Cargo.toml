@@ -1,25 +1,6 @@
 [package]
 name = "vy-macros"
-version = "0.2.0"
+version = "0.3.0"
 edition = "2021"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = """
-A convenient and type-safe HTML templating library.
-"""
-repository = "https://github.com/JonahLund/vy"
-keywords = ["html", "macros", "template"]
-categories = ["template-engine", "web-programming"]
-license = "MIT"
-workspace = "../"
-
-[lib]
-proc-macro = true
 
 [dependencies]
-proc-macro2 = "1"
-quote = "1"
-syn = { version = "2", features = ["full"] }
-vy-core = { path = "../core", version = "0.2.0" }
-
-[dev-dependencies]
-vy = { path = "../" }
