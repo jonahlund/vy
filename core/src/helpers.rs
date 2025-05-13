@@ -45,7 +45,7 @@ macro_rules! impl_tuple {
 	};
 }
 
-impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z);
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z A_ B_ C_ D_ E_ F_ G_ H_ I_ J_ K_);
 
 macro_rules! via_itoa {
     ($($ty:ty)*) => {
