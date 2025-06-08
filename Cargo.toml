@@ -8,8 +8,7 @@ version = "0.3.0"
 edition = "2021"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = """
-h1!("Rust HTML macros")
-p!("Write type-safe HTML in Rust")
+p!("Type safe HTML in Rust")
 """
 repository = "https://github.com/JonahLund/vy"
 keywords = ["html", "macros", "template"]
@@ -17,8 +16,17 @@ categories = ["template-engine", "web-programming"]
 license = "MIT"
 
 [features]
-default = ["std"]
+default = ["std", "speculative", "known"]
 std = ["vy-core/std"]
+
+# Enable for better performance, may cause unexpected behavior in special cases
+# where you provide your own standard element macros, my_crate::div!(),
+# my_crate::input!() etc.
+speculative = ["vy-macros/speculative"]
+
+known = []
+known-htmx = []
+known-alpinejs = []
 
 [dependencies]
 vy-core = { path = "./core", version = "0.3.0" }

@@ -1,23 +1,16 @@
+#![no_std]
+
+pub mod known;
+pub mod prelude;
+
+extern crate self as vy;
+#[cfg(any(test, feature = "std"))]
+extern crate std;
+
+pub use vy_core::{escape, escape::PreEscaped, IntoHtml};
+pub use vy_macros::*;
+
 fn t() {
-    // vy::div!(id = "foo", class = "bar");
-
-    {
-        const _: () = {
-            _ = vy::div!();
-            _ = class;
-        };
-        (
-            PreEscaped("<div id=\"foo\" class=\"bar\""),
-            123,
-            PreEscaped("</div>"),
-        )
-    }
-}
-
-trait Global {
-    const CLASS: () = ();
-}
-
-trait Div {
-    const FORSEN: () = ();
+    const X: PreEscaped<&str> =
+        div!(class = "", id = 123, aria_label = "", div!(id = ""));
 }
