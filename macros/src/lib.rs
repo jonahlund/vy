@@ -1,88 +1,31 @@
+mod declare;
+mod define;
+
 use proc_macro::TokenStream;
-use proc_macro2::TokenStream as TokenStream2;
-use quote::quote;
-use syn::{
-    parse::{Parse, ParseStream},
-    parse_macro_input, LitStr, Result, Token,
-};
+use quote::{format_ident, quote};
+use syn::{parse_macro_input, parse_quote};
 
 use crate::{
-    ast::ElementBody,
-    generate::{Generator, Part},
+    declare::DeclareElements,
+    define::{
+        compile_checks,
+        generate::{Generator, Part},
+        DefineElement, DefineVoidElement,
+    },
 };
-
-mod ast;
-mod generate;
-
-#[cfg(feature = "speculative")]
-mod speculative;
-
-struct DefineElement {
-    name: String,
-    body: ElementBody,
-}
-
-impl Parse for DefineElement {
-    fn parse(input: ParseStream) -> Result<Self> {
-        let name = input.parse::<LitStr>()?;
-        _ = input.parse::<Token![,]>();
-
-        Ok(Self {
-            name: name.value(),
-            body: ElementBody::parse(input)?,
-        })
-    }
-}
-
-fn compile_checks(el: &ElementBody) -> TokenStream2 {
-    let mut items = Vec::new();
-
-    fn recurse(items: &mut Vec<TokenStream2>, el: &ElementBody) {
-        for attr in &el.attrs {
-            let attr_name = &attr.name;
-            items.push(quote! {
-                _ = ::vy::known::Div::#attr_name;
-            });
-        }
-
-        for node in &el.nodes {
-            #[cfg(feature = "speculative")]
-            if let ast::Node::Element(el) = node {
-                let mac_path = &el.mac.path;
-                items.push(quote! {
-                    use #mac_path as _;
-                });
-
-                recurse(items, &el.body)
-            }
-        }
-    }
-
-    recurse(&mut items, el);
-
-    quote!({
-        #[allow(unused_imports)]
-        use ::vy::known::AriaAttributes as _;
-        #[allow(unused_imports)]
-        use ::vy::known::GlobalAttributes as _;
-        #[allow(unused_imports)]
-        const _: () = {
-            #(#items)*
-        };
-    })
-}
 
 /// Defines an element.
 #[proc_macro]
 pub fn define_element(input: TokenStream) -> TokenStream {
     let el = parse_macro_input!(input as DefineElement);
-    let compile_checks = compile_checks(&el.body);
+    let el_name = format_ident!("{}", el.name.value());
+    let compile_checks = compile_checks(&parse_quote!(#el_name), &el.body);
 
     let mut text = String::new();
     let mut gen = Generator::new(&mut text);
-    gen.write_element(&el.name.to_string(), el.body);
+    gen.write_element(&el.name.value(), el.body);
 
-    let parts = gen.finish().into_iter().map(|part| match part {
+    let parts = gen.parts().into_iter().map(|part| match part {
         Part::Text(text) => quote!(::vy::PreEscaped(#text)),
         Part::Expr(expr) => quote!(::vy::IntoHtml::into_html(#expr)),
     });
@@ -112,7 +55,71 @@ pub fn define_element(input: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro]
 pub fn define_void_element(input: TokenStream) -> TokenStream {
-    let element = parse_macro_input!(input with ElementBody::parse_void);
+    let el = parse_macro_input!(input as DefineVoidElement);
+    let el_name = format_ident!("{}", el.name.value());
+    let compile_checks = compile_checks(&parse_quote!(#el_name), &el.body);
 
-    quote! {}.into()
+    let mut text = String::new();
+    let mut gen = Generator::new(&mut text);
+    gen.write_element(&el.name.value(), el.body);
+
+    let parts = gen.parts().into_iter().map(|part| match part {
+        Part::Text(text) => quote!(::vy::PreEscaped(#text)),
+        Part::Expr(expr) => quote!(::vy::IntoHtml::into_html(#expr)),
+    });
+
+    quote!({
+        #compile_checks
+
+        (#(#parts),*)
+    })
+    .into()
+}
+
+#[proc_macro]
+pub fn declare_elements(input: TokenStream) -> TokenStream {
+    let DeclareElements { elements } =
+        parse_macro_input!(input as DeclareElements);
+
+    let elements = elements.into_iter().map(|el| {
+        let el_name_ident = el.name;
+        let el_name_str = el_name_ident.to_string();
+        let el_attrs = el.attributes.into_iter().map(|attr| {
+            let docs = attr.docs;
+            let name = attr.name;
+
+            quote!(
+                #(#docs)*
+                #[expect(non_upper_case_globals)]
+                pub const #name: ::vy::Attribute = ::vy::Attribute;
+            )
+        });
+
+        let docs = el.docs;
+
+        quote! {
+            #[expect(non_camel_case_types)]
+            #[doc(hidden)]
+            pub struct #el_name_ident;
+
+            impl ::vy::Element for #el_name_ident {}
+
+            impl #el_name_ident {
+                #(#el_attrs)*
+            }
+
+            #(#docs)*
+            #[macro_export]
+            macro_rules! #el_name_ident {
+                ($($tt:tt)*) => {
+                    ::vy::define_element!(#el_name_str, $($tt)*)
+                }
+            }
+        }
+    });
+
+    quote! {
+        #(#elements)*
+    }
+    .into()
 }

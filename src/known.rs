@@ -1,43 +1,7 @@
-macro_rules! declare_elements {
-    ($($name:ident { $($attr:ident)* }),*) => {
-        // $(
-        // #[macro_export]
-        // macro_rules! $name {
-        //     ($($tt:tt)*) => {
-        //         $crate::define_element!(stringify!($name), $($tt)*)
-        //     };
-        // }
-        // )*
-    };
-}
+//! Known attributes and elements.
 
-declare_elements!(div { GlobalAttributes }, span {});
-
-#[macro_export]
-macro_rules! div {
-    ($($tt:tt)*) => {
-        $crate::define_element!("div", $($tt)*)
-    };
-}
-
-#[macro_export]
-macro_rules! input {
-    ($($tt:tt)*) => {
-        $crate::define_element!("input", $($tt)*)
-    };
-}
-
-pub trait Element {
-    const VOID: bool = false;
-}
-
-pub struct Attribute;
-
-pub struct Div;
-
-impl Element for Div {}
-
-pub struct Input;
+use vy_core::{Attribute, Element};
+use vy_macros::declare_elements;
 
 #[expect(non_upper_case_globals)]
 pub trait GlobalAttributes {
@@ -47,22 +11,419 @@ pub trait GlobalAttributes {
 
 impl<T: Element> GlobalAttributes for T {}
 
-#[expect(non_upper_case_globals)]
-pub trait AriaAttributes {
-    const aria_label: Attribute = Attribute;
-    const aria_hidden: Attribute = Attribute;
-    const aria_disabled: Attribute = Attribute;
+#[cfg(feature = "known-htmx")]
+pub mod htmx {
+    #[expect(non_upper_case_globals)]
+    pub trait HtmxAttributes {
+        const hx_target: Attribute = Attribute;
+        const hx_get: Attribute = Attribute;
+        const hx_post: Attribute = Attribute;
+    }
+
+    impl<T: Element> HtmxAttributes for T {}
 }
 
-impl<T: Element> AriaAttributes for T {}
-
-#[cfg(feature = "known-htmx")]
-#[expect(non_upper_case_globals)]
-pub trait HtmxAttributes {
-    const hx_target: Attribute = Attribute;
-    const hx_get: Attribute = Attribute;
-    const hx_post: Attribute = Attribute;
+#[cfg(feature = "known-svg")]
+pub mod svg {
+    pub use vy_svg::*;
 }
 
-#[cfg(feature = "known-htmx")]
-impl<T: Element> HtmxAttributes for T {}
+declare_elements!(
+    a {
+        attributionsrc,
+        download,
+        href,
+        hreflang,
+        ping,
+        referrerpolicy,
+        rel,
+        target,
+    },
+    abbr {},
+    address {},
+    area {
+        alt,
+        coords,
+        download,
+        href,
+        ping,
+        referrerpolicy,
+        rel,
+        shape,
+        target,
+    },
+    article {},
+    aside {},
+    audio {
+        autoplay,
+        controls,
+        controlslist,
+        crossorigin,
+        disableremoteplayback,
+        r#loop,
+        muted,
+        preload,
+        src,
+    },
+    b {},
+    base { href, target },
+    bdi {},
+    bdo { dir },
+    blockquote { cite },
+    body {},
+    br {},
+    button {
+        autofocus,
+        command,
+        commandfor,
+        disabled,
+        form,
+        formaction,
+        formenctype,
+        formmethod,
+        formnovalidate,
+        formtarget,
+        name,
+        popovertarget,
+        popovertargetaction,
+        r#type,
+        value,
+    },
+    canvas {
+        height,
+        moz_opaque,
+        width,
+    },
+    caption {},
+    cite {},
+    code {},
+    col { span },
+    colgroup { span },
+    data { value },
+    datalist {},
+    dd {},
+    del { cite, datetime },
+    details { open, name },
+    dfn {},
+    dialog { closedby, open },
+    div {},
+    dl {},
+    dt {},
+    em {},
+    embed {
+        height,
+        src,
+        r#type,
+        width,
+    },
+    fieldset {
+        disabled,
+        form,
+        name,
+    },
+    figcaption {},
+    figure {},
+    footer {},
+    form {
+        accept,
+        accept_charset,
+        autocapitalize,
+        autocomplete,
+        name,
+        rel,
+        action,
+        enctype,
+        method,
+        novalidate,
+        target,
+    },
+    h1 {},
+    h2 {},
+    h3 {},
+    h4 {},
+    h5 {},
+    h6 {},
+    head {},
+    header {},
+    hgroup {},
+    hr {},
+    html { xmlns },
+    i {},
+    iframe {
+        allow,
+        allowfullscreen,
+        allowpaymentrequest,
+        browsingtopics,
+        credentialless,
+        csp,
+        height,
+        loading,
+        name,
+        referrerpolicy,
+        sandbox,
+        src,
+        srcdoc,
+        width,
+    },
+    img {
+        alt,
+        attributionsrc,
+        crossorigin,
+        decoding,
+        elementtiming,
+        fetchpriority,
+        height,
+        ismap,
+        loading,
+        referrerpolicy,
+        sizes,
+        src,
+        srcset,
+        width,
+        usemap,
+    },
+    input {
+        accept,
+        alt,
+        autocapitalize,
+        autocomplete,
+        autofocus,
+        capture,
+        checked,
+        dirname,
+        disabled,
+        form,
+        formaction,
+        formenctype,
+        formmethod,
+        formnovalidate,
+        formtarget,
+        height,
+        id,
+        inputmode,
+        list,
+        max,
+        maxlength,
+        min,
+        minlength,
+        multiple,
+        name,
+        pattern,
+        placeholder,
+        popovertarget,
+        popovertargetaction,
+        readonly,
+        required,
+        size,
+        src,
+        step,
+        tabindex,
+        title,
+        r#type,
+        value,
+        width,
+    },
+    ins { cite, datetime },
+    kbd {},
+    label { r#for },
+    legend {},
+    li { value, r#type },
+    link {
+        r#as,
+        blocking,
+        crossorigin,
+        disabled,
+        fetchpriority,
+        href,
+        hreflang,
+        imagesizes,
+        imagesrcset,
+        integrity,
+        media,
+        referrerpolicy,
+        rel,
+        sizes,
+        title,
+        r#type,
+    },
+    main {},
+    map { name },
+    mark {},
+    menu {},
+    meta {
+        charset,
+        content,
+        http_equiv,
+        media,
+        name,
+    },
+    meter {
+        value,
+        min,
+        max,
+        low,
+        high,
+        optimum,
+        form,
+    },
+    nav {},
+    noscript {},
+    object {
+        archive,
+        border,
+        classid,
+        codebase,
+        codetype,
+        data,
+        declare,
+        form,
+        height,
+        name,
+        standby,
+        r#type,
+        usemap,
+        width,
+    },
+    ol {
+        reversed,
+        start,
+        r#type,
+    },
+    optgroup { disabled, label },
+    option {
+        disabled,
+        label,
+        selected,
+        value,
+    },
+    output { r#for, form, name },
+    p {},
+    picture {},
+    pre { width, wrap },
+    progress { max, value },
+    q { cite },
+    rp {},
+    rt {},
+    ruby {},
+    s {},
+    samp {},
+    script {
+        r#async,
+        attributionsrc,
+        blocking,
+        crossorigin,
+        defer,
+        fetchpriority,
+        integrity,
+        nomodule,
+        nonce,
+        referrerpolicy,
+        src,
+        r#type,
+    },
+    search {},
+    section {},
+    select {
+        autocomplete,
+        autofocus,
+        disabled,
+        form,
+        multiple,
+        name,
+        required,
+        size,
+    },
+    slot { name },
+    small {},
+    source {
+        r#type,
+        src,
+        srcset,
+        sizes,
+        media,
+        height,
+        width,
+    },
+    span {},
+    strong {},
+    style {
+        blocking,
+        media,
+        nonce,
+        title,
+    },
+    sub {},
+    summary {},
+    sup {},
+    table {},
+    tbody {},
+    td {
+        colspan,
+        headers,
+        rowspan,
+    },
+    template {
+        shadowrootmode,
+        shadowrootclonable,
+        shadowrootdelegatesfocus,
+        shadowrootserializable,
+    },
+    textarea {
+        autocapitalize,
+        autocomplete,
+        autocorrect,
+        autofocus,
+        cols,
+        dirname,
+        disabled,
+        form,
+        maxlength,
+        minlength,
+        name,
+        placeholder,
+        readonly,
+        required,
+        rows,
+        spellcheck,
+        wrap,
+    },
+    tfoot {},
+    th {
+        abbr,
+        colspan,
+        headers,
+        rowspan,
+        scope,
+    },
+    thead {},
+    time { datetime },
+    title {},
+    tr {},
+    track {
+        default,
+        kind,
+        label,
+        src,
+        srclang,
+    },
+    u {},
+    ul {},
+    var {},
+    video {
+        autoplay,
+        controls,
+        controlslist,
+        crossorigin,
+        disablepictureinpicture,
+        disableremoteplayback,
+        height,
+        r#loop,
+        muted,
+        playsinline,
+        poster,
+        preload,
+        src,
+        width,
+    },
+    wbr {},
+);

@@ -4,4 +4,8 @@ pub use vy_core::{
 };
 pub use vy_macros::{define_element, define_void_element};
 
-pub use crate::known::GlobalAttributes;
+#[cfg(feature = "known-htmx")]
+pub use crate::known::htmx::HtmxAttributes;
+#[cfg(feature = "known-svg")]
+pub use crate::known::svg;
+pub use crate::{known::*, *};

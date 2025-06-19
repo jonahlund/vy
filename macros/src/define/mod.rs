@@ -1,10 +1,15 @@
 #![allow(clippy::to_string_trait_impl)]
 
-use quote::ToTokens;
+pub mod generate;
+#[cfg(feature = "speculative")]
+mod speculative;
+
+use proc_macro2::TokenStream as TokenStream2;
+use quote::{quote, ToTokens};
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    Error, Expr, ExprMacro, Ident, LitStr, Result, Token,
+    Error, Expr, ExprMacro, Ident, LitStr, Path, Result, Token,
 };
 
 /// An identifier: `foo`, or a literal: `"bar"`.
@@ -113,7 +118,7 @@ impl Parse for AttrOrNode {
 pub enum Node {
     Value(Value),
     #[cfg(feature = "speculative")]
-    Element(crate::speculative::ElementMacro),
+    Element(speculative::ElementMacro),
 }
 
 impl Parse for Node {
@@ -122,10 +127,9 @@ impl Parse for Node {
 
         #[cfg(feature = "speculative")]
         if let Value::Expr(Expr::Macro(ExprMacro { mac, .. })) = &expr {
-            if let Ok(el) = crate::speculative::ElementMacro::parse_macro(
-                mac.clone(),
-                input,
-            ) {
+            if let Ok(el) =
+                speculative::ElementMacro::parse_macro(mac.clone(), input)
+            {
                 return Ok(Self::Element(el));
             }
         }
@@ -197,5 +201,77 @@ impl ElementBody {
             ));
         }
         Ok(ElementBody { void: true, ..el })
+    }
+}
+
+pub struct DefineVoidElement {
+    pub name: LitStr,
+    pub body: ElementBody,
+}
+
+impl Parse for DefineVoidElement {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let name = input.parse::<LitStr>()?;
+        _ = input.parse::<Token![,]>();
+
+        Ok(Self {
+            name,
+            body: ElementBody::parse_void(input)?,
+        })
+    }
+}
+
+pub struct DefineElement {
+    pub name: LitStr,
+    pub body: ElementBody,
+}
+
+impl Parse for DefineElement {
+    fn parse(input: ParseStream) -> Result<Self> {
+        let name = input.parse::<LitStr>()?;
+        _ = input.parse::<Token![,]>();
+
+        Ok(Self {
+            name,
+            body: ElementBody::parse(input)?,
+        })
+    }
+}
+
+pub fn compile_checks(el_path: &Path, el_body: &ElementBody) -> TokenStream2 {
+    let mut items = Vec::new();
+
+    fn recurse(
+        items: &mut Vec<TokenStream2>,
+        el_path: &Path,
+        el_body: &ElementBody,
+    ) {
+        for attr in &el_body.attrs {
+            let attr_name = &attr.name;
+
+            items.push(quote! {
+                _ = #el_path::#attr_name;
+            });
+        }
+
+        for node in &el_body.nodes {
+            #[cfg(feature = "speculative")]
+            if let Node::Element(el) = node {
+                let mac_path = &el.mac.path;
+                items.push(quote! {
+                    use #mac_path as _;
+                });
+
+                recurse(items, mac_path, &el.body)
+            }
+        }
+    }
+
+    recurse(&mut items, el_path, el_body);
+
+    quote! {
+        const _: () = {
+            #(#items)*
+        };
     }
 }

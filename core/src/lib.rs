@@ -11,6 +11,12 @@ use alloc::string::String;
 
 use crate::escape::escape_into;
 
+pub trait Element {
+    const VOID: bool = false;
+}
+
+pub struct Attribute;
+
 /// A type that can be represented as HTML.
 pub trait IntoHtml {
     fn into_html(self) -> impl IntoHtml;

@@ -1,7 +1,7 @@
 use syn::{Expr, ExprGroup, ExprLit, Lit};
 use vy_core::IntoHtml as _;
 
-use crate::ast::{ElementBody, Node, Value};
+use super::{ElementBody, Node, Value};
 
 pub struct Generator<'s> {
     pub output: &'s mut String,
@@ -84,11 +84,13 @@ impl<'s> Generator<'s> {
     }
 
     pub fn write_element(&mut self, name: &str, el: ElementBody) {
+        let normalized_name = normalize_node_name(name);
         self.output.push('<');
-        self.output.push_str(name);
+        self.output.push_str(&normalized_name);
         for attr in el.attrs {
             self.output.push(' ');
-            self.output.push_str(&attr.name.to_string());
+            self.output
+                .push_str(&normalize_node_name(&attr.name.to_string()));
             self.output.push('=');
             self.output.push('"');
             self.write_expr(attr.value);
@@ -103,12 +105,12 @@ impl<'s> Generator<'s> {
             }
             self.output.push('<');
             self.output.push('/');
-            self.output.push_str(name);
+            self.output.push_str(&normalized_name);
             self.output.push('>');
         }
     }
 
-    pub fn finish(mut self) -> Vec<Part<'s>> {
+    pub fn parts(mut self) -> Vec<Part<'s>> {
         self.values.sort_by_key(|(i, _)| *i);
 
         let mut parts = Vec::new();
@@ -134,4 +136,8 @@ impl<'s> Generator<'s> {
 pub enum Part<'s> {
     Text(&'s str),
     Expr(Expr),
+}
+
+fn normalize_node_name(name: &str) -> String {
+    name.replace('_', "-").replace("r#", "")
 }
