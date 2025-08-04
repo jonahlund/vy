@@ -93,15 +93,11 @@ impl<'s> Serializer<'s> {
                 AttrValue::Expr(value) => self.write_expr(parse_quote! {
                     ::core::option::Option::map(
                         #value,
-                        |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped("\""))
+                        |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped('"'))
                     )
                 }),
                 AttrValue::Bool(value) => self.write_expr(parse_quote!{
-                    if #value {
-                        ::core::option::Option::Some(::vy::PreEscaped(#sep_name))
-                    } else {
-                        ::core::option::Option::None::<::vy::PreEscaped<String>>
-                    }
+                    <bool>::then_some(#value, ::vy::PreEscaped(#sep_name))
                 }),
             }
         } else {
