@@ -116,7 +116,6 @@ impl<'s> Serializer<'s> {
 
     pub fn write_element(&mut self, Element(head, body): Element) {
         let name = head.name.to_string();
-
         self.imports.push(head.name);
         self.buf.push('<');
         self.buf.push_str(&name);

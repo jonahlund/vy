@@ -54,11 +54,9 @@ pub enum AttrValue {
 
 impl Parse for AttrValue {
     fn parse(input: ParseStream) -> Result<Self> {
-        if let Ok(lit) = input.fork().parse::<Lit>() {
-            if let Lit::Bool(b) = lit {
-                input.parse::<Lit>()?;
-                return Ok(Self::Bool(b.value));
-            }
+        if let Ok(Lit::Bool(b)) = input.fork().parse::<Lit>() {
+            input.parse::<Lit>()?;
+            return Ok(Self::Bool(b.value));
         }
         Ok(Self::Expr(input.parse()?))
     }
