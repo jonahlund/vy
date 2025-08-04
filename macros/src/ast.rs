@@ -5,7 +5,7 @@ use quote::ToTokens;
 use syn::{
     parse::{Parse, ParseStream},
     punctuated::Punctuated,
-    Error, Expr, ExprMacro, Ident, LitStr, Macro, Path, Result, Token,
+    Error, Expr, ExprMacro, Ident, Lit, LitStr, Macro, Path, Result, Token,
 };
 
 use crate::known::{is_known_tag, is_void_tag};
@@ -47,11 +47,58 @@ impl ToString for AttrName {
     }
 }
 
+pub enum AttrValue {
+    Expr(Expr),
+    Bool(bool),
+}
+
+impl Parse for AttrValue {
+    fn parse(input: ParseStream) -> Result<Self> {
+        if let Ok(lit) = input.fork().parse::<Lit>() {
+            if let Lit::Bool(b) = lit {
+                input.parse::<Lit>()?;
+                return Ok(Self::Bool(b.value));
+            }
+        }
+        Ok(Self::Expr(input.parse()?))
+    }
+}
+
+impl From<AttrValue> for Expr {
+    fn from(value: AttrValue) -> Self {
+        match value {
+            AttrValue::Expr(expr) => expr,
+            AttrValue::Bool(b) => Expr::Lit(syn::ExprLit {
+                attrs: Vec::new(),
+                lit: Lit::Bool(syn::LitBool::new(
+                    b,
+                    proc_macro2::Span::call_site(),
+                )),
+            }),
+        }
+    }
+}
+
+impl ToTokens for AttrValue {
+    fn to_tokens(&self, tokens: &mut TokenStream) {
+        match self {
+            Self::Expr(expr) => expr.to_tokens(tokens),
+            Self::Bool(b) => {
+                let lit = Lit::Bool(syn::LitBool::new(
+                    *b,
+                    proc_macro2::Span::call_site(),
+                ));
+                lit.to_tokens(tokens);
+            }
+        }
+    }
+}
+
 pub struct Attr {
     pub name: AttrName,
     pub question_token: Option<Token![?]>,
     pub eq_token: Token![=],
-    pub value: Expr,
+    pub value: AttrValue,
 }
 
 impl Attr {

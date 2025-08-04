@@ -6,7 +6,7 @@ use syn::{
 use vy_core::{Buffer, IntoHtml};
 
 use crate::{
-    ast::{Attr, Element, Node},
+    ast::{Attr, AttrValue, Element, Node},
     known::is_void_tag,
 };
 
@@ -86,27 +86,37 @@ impl<'s> Serializer<'s> {
     pub fn write_attr(&mut self, attr: Attr) {
         let name = attr.name.to_string();
         if attr.is_optional() {
-            let sep_name_eq = String::from(' ') + &name + "=\"";
-            let value = &attr.value;
+            let sep_name = String::from(' ') + &name;
+            let sep_name_eq = sep_name.clone() + "=\"";
 
-            self.write_expr(parse_quote! {
-                ::core::option::Option::map(
-                    #value,
-                    |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped('"'))
-                )
-            });
+            match attr.value {
+                AttrValue::Expr(value) => self.write_expr(parse_quote! {
+                    ::core::option::Option::map(
+                        #value,
+                        |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped("\""))
+                    )
+                }),
+                AttrValue::Bool(value) => self.write_expr(parse_quote!{
+                    if #value {
+                        ::core::option::Option::Some(::vy::PreEscaped(#sep_name))
+                    } else {
+                        ::core::option::Option::None::<::vy::PreEscaped<String>>
+                    }
+                }),
+            }
         } else {
             self.buf.push(' ');
             self.buf.push_str(&name);
             self.buf.push('=');
             self.buf.push('"');
-            self.write_expr(attr.value);
+            self.write_expr(attr.value.into());
             self.buf.push('"');
         }
     }
 
     pub fn write_element(&mut self, Element(head, body): Element) {
         let name = head.name.to_string();
+
         self.imports.push(head.name);
         self.buf.push('<');
         self.buf.push_str(&name);
