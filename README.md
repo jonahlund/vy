@@ -60,7 +60,7 @@ name := identifier | text
 
 - **Parenthesis-based**: Works with `rustfmt` formatting constraints.
 - **Reserved word handling**: Attributes like `type` and `for` use string syntax, e.g., `"type" = ".."` instead of `type = ".."`.
-- **Optional attributes**: `?` marks optional attributes (e.g., `disabled? = Some("")`).
+- **Optional attributes**: `?` marks optional attributes (e.g., `class? = Some("foo")` or `disabled? = true`).
 
 ### Why this syntax?
 
