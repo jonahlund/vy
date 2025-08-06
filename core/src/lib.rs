@@ -308,3 +308,45 @@ impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
         n
     }
 }
+
+#[cfg(feature = "std")]
+impl<'a> IntoHtml for std::borrow::Cow<'a, str> {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        escape_into(buf, self.as_ref())
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.as_ref().len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[cfg(feature = "std")]
+    #[test]
+    fn test_impl_cow_str() {
+        use std::borrow::Cow;
+
+        assert_eq!(
+            <Cow<'static, str> as IntoHtml>::into_string(Cow::Borrowed(
+                "borrowed"
+            )),
+            "borrowed"
+        );
+        assert_eq!(
+            <Cow<'static, str> as IntoHtml>::into_string(Cow::Owned(
+                String::from("owned")
+            )),
+            "owned"
+        );
+    }
+}
