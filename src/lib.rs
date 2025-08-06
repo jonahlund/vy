@@ -86,4 +86,22 @@ mod tests {
             "<div class=\"foo bar\" id=\"baz\"></div>"
         );
     }
+
+    #[test]
+    fn attributes_maybe_some() {
+        let some = Some("foo");
+        let none: Option<String> = None;
+        assert_eq!(
+            div!(class? = some, id? = none).into_string(),
+            r#"<div class="foo"></div>"#
+        );
+    }
+
+    #[test]
+    fn attributes_maybe_bool() {
+        assert_eq!(
+            button!(disabled? = true, hidden? = false).into_string(),
+            r#"<button disabled></button>"#
+        );
+    }
 }
