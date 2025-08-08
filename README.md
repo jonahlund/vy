@@ -9,11 +9,10 @@ A convenient, type-safe HTML templating library for Rust
 
 ## Usage
 
-Create a typical HTML page:
-
 ```rust
 use vy::prelude::*;
 
+// Create a typical HTML page
 fn page(content: impl IntoHtml) -> impl IntoHtml {
     (
         DOCTYPE,
@@ -35,6 +34,29 @@ fn page(content: impl IntoHtml) -> impl IntoHtml {
         ),
     )
 }
+
+// Here's how to express common patterns in the VY tuple-based syntax
+fn patterns(items: Vec<String>, condition: bool, maybe_some: Option<String>) -> impl IntoHtml {
+    (
+        // for loop
+        items.into_iter().map(|item| li!(item)),
+        // if-then-else
+        condition.then_some(i!("condition is met")),
+        (!condition).then_some(b!("condition is NOT met")),
+        // if-let
+        maybe_some.map(|inner| i!(inner)),
+    )
+}
+
+assert_eq!(
+    patterns(vec!["foo".into(), "bar".into()], true, Some("some".into())).into_string(),
+    "<li>foo</li><li>bar</li><i>condition is met</i><i>some</i>"
+);
+
+assert_eq!(
+    patterns(vec![], false, None).into_string(),
+    "<b>condition is NOT met</b>"
+);
 ```
 
 Key features to note:
