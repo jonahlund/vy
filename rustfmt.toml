@@ -1,4 +1,5 @@
-edition = "2024"
+edition = "2021"
+style_edition = "2021"
 imports_granularity = "Crate"
 group_imports = "StdExternalCrate"
 max_width = 80
