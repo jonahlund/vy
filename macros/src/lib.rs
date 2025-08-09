@@ -5,7 +5,7 @@ mod known;
 
 use proc_macro::TokenStream;
 use quote::{format_ident, quote};
-use syn::{parse::Parse, parse_macro_input};
+use syn::{parse::Parse, parse_macro_input, Data, DeriveInput, Fields};
 use vy_core::Buffer;
 
 use self::{
@@ -84,3 +84,55 @@ macro_rules! define_proc_macro {
 }
 
 for_all_elements!(define_proc_macro);
+
+/// Derives `IntoHtml` for a newtype struct.
+///
+/// This macro implements `IntoHtml` for a struct with a single tuple field
+/// by delegating the implementation to the inner type.
+///
+/// # Example
+///
+/// ```
+/// use vy_core::IntoHtml;
+/// use vy_macros::InnerIntoHtml;
+///
+/// #[derive(InnerIntoHtml)]
+/// struct Length((usize, String));
+///
+/// let length = Length((1, "cm".into()));
+/// assert_eq!(length.into_string(), "1cm");
+/// ```
+#[proc_macro_derive(InnerIntoHtml)]
+pub fn inner_into_html_derive(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    let name = input.ident;
+
+    let data = match input.data {
+        Data::Struct(s) => s,
+        _ => panic!("InnerIntoHtml can only be derived for structs"),
+    };
+
+    let fields = match data.fields {
+        Fields::Unnamed(f) => f.unnamed,
+        _ => panic!("InnerIntoHtml can only be derived for tuple structs"),
+    };
+
+    if fields.len() != 1 {
+        panic!(
+            "InnerIntoHtml can only be derived for newtypes (tuple structs \
+             with one field)"
+        );
+    }
+
+    let expanded = quote! {
+        impl ::vy_core::IntoHtml for #name {
+            #[inline]
+            fn into_html(self) -> impl ::vy_core::IntoHtml {
+                self.0
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}

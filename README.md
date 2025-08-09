@@ -75,6 +75,25 @@ The macro design balances several constraints:
 
 Escaping is done automatically, but can be opted out by wrapping a type with `PreEscaped(..)`.
 
+## Deriving for newtypes
+
+For newtype wrappers (structs with a single unnamed field), you can use the
+`InnerIntoHtml` derive macro to automatically implement `IntoHtml`:
+
+```rust
+use vy::prelude::*;
+
+#[derive(InnerIntoHtml)]
+struct Length((usize, String));
+
+let length = Length((1, "cm".into()));
+assert_eq!(length.into_string(), "1cm");
+```
+
+This delegates the `IntoHtml` implementation to the inner type, reducing
+boilerplate.
+
+
 ## Performance
 
 `vy` utilizes a few practices for fast rendering times:
