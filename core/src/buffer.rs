@@ -38,7 +38,7 @@ use core::{
 
 /// Buffer for rendered contents
 ///
-/// This struct is quite simular to `String`, but some methods are
+/// This struct is quite similar to `String`, but some methods are
 /// re-implemented for faster buffering.
 pub struct Buffer {
     data: *mut u8,
@@ -419,7 +419,7 @@ mod tests {
         let mut buf = Buffer::from(s);
         assert_eq!(buf.as_str(), "");
 
-        // capacity should be shrinked for safety
+        // capacity should be shrunk for safety
         assert_eq!(buf.capacity(), 0);
 
         buf.push_str("abc");

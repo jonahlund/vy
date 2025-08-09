@@ -1,6 +1,3 @@
-[workspace]
-resolver = "2"
-members = ["core", "macros"]
 
 [package]
 name = "vy"
@@ -14,6 +11,9 @@ repository = "https://github.com/JonahLund/vy"
 keywords = ["html", "macros", "template"]
 categories = ["template-engine", "web-programming"]
 license = "MIT"
+[workspace]
+resolver = "2"
+members = ["core", "macros"]
 
 [features]
 default = ["std"]

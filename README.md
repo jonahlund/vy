@@ -82,3 +82,8 @@ Escaping is done automatically, but can be opted out by wrapping a type with `Pr
 - **Pre-calculated sizing**: HTML output size is estimated before allocation.
 - **Single-allocation rendering**: Most templates render in one memory allocation.
 - **Zero-cost composition**: Macros expand to tuple-based [`IntoHtml`] types without closures.
+
+
+## Contributing
+
+You can run `./.pre-commit.sh` before sending a PR, it will check everything the CI does.
