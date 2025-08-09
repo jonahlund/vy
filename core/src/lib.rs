@@ -309,8 +309,7 @@ impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
     }
 }
 
-#[cfg(feature = "std")]
-impl<'a> IntoHtml for std::borrow::Cow<'a, str> {
+impl<'a> IntoHtml for alloc::borrow::Cow<'a, str> {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
         self
@@ -331,10 +330,9 @@ impl<'a> IntoHtml for std::borrow::Cow<'a, str> {
 mod tests {
     use super::*;
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_impl_cow_str() {
-        use std::borrow::Cow;
+        use alloc::borrow::Cow;
 
         assert_eq!(
             <Cow<'static, str> as IntoHtml>::into_string(Cow::Borrowed(
