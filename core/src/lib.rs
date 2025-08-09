@@ -326,11 +326,10 @@ impl<'a> IntoHtml for std::borrow::Cow<'a, str> {
         self.as_ref().len()
     }
 }
-#[cfg(feature = "std")]
-impl IntoHtml for std::net::Ipv4Addr {
+impl IntoHtml for core::net::Ipv4Addr {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
-        std::string::ToString::to_string(&self)
+        alloc::format!("{self}")
     }
 
     #[inline]
@@ -339,11 +338,10 @@ impl IntoHtml for std::net::Ipv4Addr {
     }
 }
 
-#[cfg(feature = "std")]
-impl IntoHtml for std::net::Ipv6Addr {
+impl IntoHtml for core::net::Ipv6Addr {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
-        std::string::ToString::to_string(&self)
+        alloc::format!("{self}")
     }
 
     #[inline]
@@ -352,11 +350,10 @@ impl IntoHtml for std::net::Ipv6Addr {
     }
 }
 
-#[cfg(feature = "std")]
-impl IntoHtml for std::net::IpAddr {
+impl IntoHtml for core::net::IpAddr {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
-        std::string::ToString::to_string(&self)
+        alloc::format!("{self}")
     }
 
     #[inline]
@@ -391,10 +388,9 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_impl_ipv4addr() {
-        use std::net::Ipv4Addr;
+        use core::net::Ipv4Addr;
 
         let addr_str = "255.255.255.255";
         let addr: Ipv4Addr = addr_str.parse().unwrap();
@@ -402,10 +398,9 @@ mod tests {
         assert_eq!(addr.size_hint(), 15);
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_impl_ipv6addr() {
-        use std::net::Ipv6Addr;
+        use core::net::Ipv6Addr;
 
         let addr_str = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff";
         let addr: Ipv6Addr = addr_str.parse().unwrap();
@@ -413,10 +408,9 @@ mod tests {
         assert_eq!(addr.size_hint(), 39);
     }
 
-    #[cfg(feature = "std")]
     #[test]
     fn test_impl_ipaddr() {
-        use std::net::IpAddr;
+        use core::net::IpAddr;
 
         let addr_str = "127.0.0.1";
         let ipv4: IpAddr = addr_str.parse().unwrap();
