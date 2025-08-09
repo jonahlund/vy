@@ -325,6 +325,44 @@ impl<'a> IntoHtml for alloc::borrow::Cow<'a, str> {
         self.as_ref().len()
     }
 }
+impl IntoHtml for core::net::Ipv4Addr {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        alloc::format!("{self}")
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        15
+    }
+}
+
+impl IntoHtml for core::net::Ipv6Addr {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        alloc::format!("{self}")
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        39
+    }
+}
+
+impl IntoHtml for core::net::IpAddr {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        alloc::format!("{self}")
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        match self {
+            Self::V4(_) => 15,
+            Self::V6(_) => 39,
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
@@ -346,5 +384,38 @@ mod tests {
             )),
             "owned"
         );
+    }
+
+    #[test]
+    fn test_impl_ipv4addr() {
+        use core::net::Ipv4Addr;
+
+        let addr_str = "255.255.255.255";
+        let addr: Ipv4Addr = addr_str.parse().unwrap();
+        assert_eq!(addr.into_string(), addr_str);
+        assert_eq!(addr.size_hint(), 15);
+    }
+
+    #[test]
+    fn test_impl_ipv6addr() {
+        use core::net::Ipv6Addr;
+
+        let addr_str = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff";
+        let addr: Ipv6Addr = addr_str.parse().unwrap();
+        assert_eq!(addr.into_string(), addr_str);
+        assert_eq!(addr.size_hint(), 39);
+    }
+
+    #[test]
+    fn test_impl_ipaddr() {
+        use core::net::IpAddr;
+
+        let addr_str = "127.0.0.1";
+        let ipv4: IpAddr = addr_str.parse().unwrap();
+        assert_eq!(ipv4.into_string(), addr_str);
+
+        let addr_str = "::1";
+        let ipv6: IpAddr = addr_str.parse().unwrap();
+        assert_eq!(ipv6.into_string(), addr_str);
     }
 }
