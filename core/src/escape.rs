@@ -1,4 +1,4 @@
-use alloc::string::String;
+use alloc::{borrow::Cow, string::String};
 
 use crate::{buffer::Buffer, IntoHtml};
 
@@ -84,5 +84,39 @@ impl IntoHtml for PreEscaped<char> {
     #[inline]
     fn size_hint(&self) -> usize {
         self.0.len_utf8()
+    }
+}
+
+impl IntoHtml for PreEscaped<Cow<'static, str>> {
+    #[inline]
+    fn into_html(self) -> impl IntoHtml {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut Buffer) {
+        buf.push_str(&self.0);
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.0.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_preescaped_cow_str() {
+        assert_eq!(
+            PreEscaped(Cow::Borrowed("<b>borrowed</b>")).into_string(),
+            "<b>borrowed</b>"
+        );
+        assert_eq!(
+            PreEscaped(Cow::Owned(String::from("<b>owned</b>"))).into_string(),
+            "<b>owned</b>"
+        );
     }
 }
