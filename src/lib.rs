@@ -103,5 +103,12 @@ mod tests {
             button!(disabled? = true, hidden? = false).into_string(),
             r#"<button disabled></button>"#
         );
+
+        let yes = true;
+        let no = false;
+        assert_eq!(
+            button!(disabled? = yes, hidden? = no).into_string(),
+            r#"<button disabled></button>"#
+        );
     }
 }
