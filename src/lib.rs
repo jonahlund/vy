@@ -14,6 +14,39 @@ pub use vy_macros::*;
 
 pub const DOCTYPE: PreEscaped<&'static str> = PreEscaped("<!DOCTYPE html>");
 
+#[doc(hidden)]
+pub mod __macro_support {
+    use vy_core::{escape::PreEscaped, IntoHtml};
+
+    pub struct OptionalAttr<T>(pub T);
+
+    impl OptionalAttr<bool> {
+        #[inline]
+        pub fn render(self, name: &'static str) -> impl IntoHtml {
+            if self.0 {
+                Some((PreEscaped(" "), PreEscaped(name)))
+            } else {
+                None
+            }
+        }
+    }
+
+    impl<T: IntoHtml> OptionalAttr<Option<T>> {
+        #[inline]
+        pub fn render(self, name: &'static str) -> impl IntoHtml {
+            self.0.map(|v| {
+                (
+                    PreEscaped(" "),
+                    PreEscaped(name),
+                    PreEscaped("=\""),
+                    v,
+                    PreEscaped('"'),
+                )
+            })
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
