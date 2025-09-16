@@ -24,7 +24,7 @@ pub mod __macro_support {
         #[inline]
         pub fn render(self, name: &'static str) -> impl IntoHtml {
             if self.0 {
-                Some((PreEscaped(" "), PreEscaped(name)))
+                Some((PreEscaped(' '), PreEscaped(name)))
             } else {
                 None
             }
@@ -36,7 +36,7 @@ pub mod __macro_support {
         pub fn render(self, name: &'static str) -> impl IntoHtml {
             self.0.map(|v| {
                 (
-                    PreEscaped(" "),
+                    PreEscaped(' '),
                     PreEscaped(name),
                     PreEscaped("=\""),
                     v,
