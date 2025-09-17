@@ -104,4 +104,19 @@ mod tests {
             r#"<button disabled></button>"#
         );
     }
+
+    #[test]
+    fn derive_inner_into_html() {
+        #[derive(InnerIntoHtml)]
+        struct Switch(bool);
+
+        let enabled = Switch(true);
+        assert_eq!(enabled.into_string(), "true");
+
+        #[derive(InnerIntoHtml)]
+        struct Length((usize, String));
+
+        let length = Length((1, "cm".into()));
+        assert_eq!(length.into_string(), "1cm");
+    }
 }
