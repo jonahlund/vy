@@ -1,4 +1,6 @@
-use crate::{Buffer, IntoHtml};
+use alloc::string::String;
+
+use crate::IntoHtml;
 
 macro_rules! impl_enum {
     ( $( $name:ident $($var:ident)+, )+ ) => {
@@ -19,7 +21,7 @@ macro_rules! impl_enum {
                 }
 
                 #[inline]
-                fn escape_and_write(self, buf: &mut Buffer) {
+                fn escape_and_write(self, buf: &mut String) {
                     match self {
                         $( $name::$var(value) => value.escape_and_write(buf), )*
                     }

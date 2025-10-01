@@ -3,7 +3,7 @@ use quote::{format_ident, quote, ToTokens};
 use syn::{
     parse_quote, Block, Expr, ExprBlock, ExprGroup, ExprLit, Ident, Lit, Token,
 };
-use vy_core::{Buffer, IntoHtml};
+use vy_core::IntoHtml;
 
 use crate::{
     ast::{Attr, AttrValue, Element, Node},
@@ -11,13 +11,13 @@ use crate::{
 };
 
 pub struct Serializer<'s> {
-    buf: &'s mut Buffer,
+    buf: &'s mut String,
     values: Vec<(usize, Expr)>,
     imports: Vec<Ident>,
 }
 
 impl<'s> Serializer<'s> {
-    pub fn new(buf: &'s mut Buffer) -> Self {
+    pub fn new(buf: &'s mut String) -> Self {
         Self {
             buf,
             values: Vec::new(),

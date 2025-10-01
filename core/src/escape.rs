@@ -1,6 +1,6 @@
 use alloc::{borrow::Cow, string::String};
 
-use crate::{buffer::Buffer, IntoHtml};
+use crate::IntoHtml;
 
 #[inline]
 pub const fn escape_char(ch: char) -> Option<&'static str> {
@@ -16,7 +16,7 @@ pub const fn escape_char(ch: char) -> Option<&'static str> {
 /// Escapes all special HTML characters in `input` and writes the result into
 /// `buf`.
 #[inline]
-pub fn escape_into(output: &mut Buffer, input: &str) {
+pub fn escape_into(output: &mut String, input: &str) {
     for ch in input.chars() {
         match escape_char(ch) {
             Some(esc) => output.push_str(esc),
@@ -27,8 +27,8 @@ pub fn escape_into(output: &mut Buffer, input: &str) {
 
 /// Escapes all special HTML characters in `input`.
 #[inline]
-pub fn escape(input: &str) -> Buffer {
-    let mut output = Buffer::with_capacity(input.len());
+pub fn escape(input: &str) -> String {
+    let mut output = String::with_capacity(input.len());
     escape_into(&mut output, input);
     output
 }
@@ -43,7 +43,7 @@ impl IntoHtml for PreEscaped<&str> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         buf.push_str(self.0);
     }
 
@@ -60,7 +60,7 @@ impl IntoHtml for PreEscaped<String> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         buf.push_str(&self.0);
     }
 
@@ -77,7 +77,7 @@ impl IntoHtml for PreEscaped<char> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         buf.push(self.0);
     }
 
@@ -94,7 +94,7 @@ impl IntoHtml for PreEscaped<Cow<'static, str>> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         buf.push_str(&self.0);
     }
 

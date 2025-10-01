@@ -4,14 +4,12 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-mod buffer;
 pub mod either;
 pub mod escape;
 mod helpers;
 
 use alloc::string::String;
 
-pub use self::buffer::Buffer;
 use self::escape::escape_into;
 
 /// A type that can be represented as HTML.
@@ -80,7 +78,7 @@ pub trait IntoHtml {
     ///         self
     ///     }
     ///
-    ///     fn escape_and_write(self, buf: &mut Buffer) {
+    ///     fn escape_and_write(self, buf: &mut String) {
     ///         escape_into(buf, &self.0);
     ///     }
     ///
@@ -91,9 +89,9 @@ pub trait IntoHtml {
     /// ```
     fn into_html(self) -> impl IntoHtml;
 
-    /// Writes the HTML into the provided [`Buffer`].
+    /// Writes the HTML into the provided [`String`].
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer)
+    fn escape_and_write(self, buf: &mut String)
     where
         Self: Sized,
     {
@@ -112,9 +110,9 @@ pub trait IntoHtml {
     {
         let html = self.into_html();
         let size = html.size_hint();
-        let mut buf = Buffer::with_capacity(size + (size / 10));
+        let mut buf = String::with_capacity(size + (size / 10));
         html.escape_and_write(&mut buf);
-        buf.into_string()
+        buf
     }
 }
 
@@ -125,7 +123,7 @@ impl IntoHtml for &str {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         escape_into(buf, self)
     }
 
@@ -142,7 +140,7 @@ impl IntoHtml for char {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         escape_into(buf, self.encode_utf8(&mut [0; 4]));
     }
 
@@ -159,7 +157,7 @@ impl IntoHtml for String {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         escape_into(buf, &self)
     }
 
@@ -172,7 +170,12 @@ impl IntoHtml for String {
 impl IntoHtml for &String {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
-        self.as_str()
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
+        escape_into(buf, self)
     }
 
     #[inline]
@@ -204,7 +207,7 @@ impl<T: IntoHtml> IntoHtml for Option<T> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         if let Some(x) = self {
             x.escape_and_write(buf)
         }
@@ -227,17 +230,17 @@ impl IntoHtml for () {
     }
 
     #[inline]
-    fn escape_and_write(self, _: &mut Buffer) {}
+    fn escape_and_write(self, _: &mut String) {}
 }
 
-impl<F: FnOnce(&mut Buffer)> IntoHtml for F {
+impl<F: FnOnce(&mut String)> IntoHtml for F {
     #[inline]
     fn into_html(self) -> impl IntoHtml {
         self
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         (self)(buf)
     }
 }
@@ -252,7 +255,7 @@ where
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         let len = self.len();
         for (i, x) in self.enumerate() {
             if i == 0 {
@@ -270,7 +273,7 @@ impl<T: IntoHtml> IntoHtml for alloc::vec::Vec<T> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         for x in self {
             x.escape_and_write(buf);
         }
@@ -293,7 +296,7 @@ impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         for x in self {
             x.escape_and_write(buf);
         }
@@ -316,7 +319,7 @@ impl<'a> IntoHtml for alloc::borrow::Cow<'a, str> {
     }
 
     #[inline]
-    fn escape_and_write(self, buf: &mut Buffer) {
+    fn escape_and_write(self, buf: &mut String) {
         escape_into(buf, self.as_ref())
     }
 
