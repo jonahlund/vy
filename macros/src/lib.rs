@@ -60,7 +60,7 @@ fn inner(name: &str, input: TokenStream) -> TokenStream {
     let imports = ser.as_imports();
     let parts = ser.into_parts().into_iter().map(|part| match part {
         Part::Str(s) => quote!(::vy::PreEscaped(#s)),
-        Part::Expr(e) => quote!(::vy::IntoHtml::into_html(#e)),
+        Part::Expr(e) => quote!(#e),
     });
 
     quote!({
