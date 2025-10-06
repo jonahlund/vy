@@ -86,18 +86,12 @@ impl<'s> Serializer<'s> {
     pub fn write_attr(&mut self, attr: Attr) {
         let name = attr.name.to_string();
         if attr.is_optional() {
-            let sep_name = String::from(' ') + &name;
-            let sep_name_eq = sep_name.clone() + "=\"";
-
             match attr.value {
                 AttrValue::Expr(value) => self.write_expr(parse_quote! {
-                    ::core::option::Option::map(
-                        #value,
-                        |val| (::vy::PreEscaped(#sep_name_eq), val, vy::PreEscaped('"'))
-                    )
+                    ::vy::__macro_support::OptionalAttr(#value).render(#name)
                 }),
-                AttrValue::Bool(value) => self.write_expr(parse_quote!{
-                    <bool>::then_some(#value, ::vy::PreEscaped(#sep_name))
+                AttrValue::Bool(value) => self.write_expr(parse_quote! {
+                    ::vy::__macro_support::OptionalAttr(#value).render(#name)
                 }),
             }
         } else {
