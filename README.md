@@ -66,6 +66,26 @@ Key features to note:
 - **Zero wrapping**: No need for container macros – elements compose naturally.
 - **Void element support**: Automatically handles self-closing tags like `<meta>`, `<img>`, etc.
 
+### Splitting long text
+
+When your lines are too long, rustfmt stops working. For example:
+
+```text
+style = "display: grid; grid-template-columns: max-content 1fr max-content; gap: 0.6em; align-items: center;"
+```
+
+Simply split your text inside a tuple to make it work:
+
+```text
+style = (
+    "display: grid;",
+    "grid-template-columns: max-content 1fr max-content;",
+    "gap: 0.6em;",
+    "align-items: center;",
+),
+```
+
+
 ## Syntax
 
 The macro grammar follows this pattern:
