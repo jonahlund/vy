@@ -4,92 +4,17 @@ extern crate alloc;
 #[cfg(feature = "std")]
 extern crate std;
 
-pub mod either;
-pub mod escape;
-mod helpers;
-
 use alloc::string::String;
 
-use self::escape::escape_into;
-
 /// A type that can be represented as HTML.
-pub trait IntoHtml {
-    /// Converts this value into HTML by producing a type that implements
-    /// [`IntoHtml`].
-    ///
-    /// This method enables composition of HTML structures by delegating
-    /// rendering to the returned value. Use it to build nested HTML
-    /// elements, combine components, or leverage existing [`IntoHtml`]
-    /// implementations.
-    ///
-    /// # Examples
-    ///
-    /// Compose nested HTML elements using macros:
-    ///
-    /// ```
-    /// # use vy::*;
-    /// struct Article {
-    ///     title: String,
-    ///     content: String,
-    ///     author: String,
-    /// }
-    ///
-    /// impl IntoHtml for Article {
-    ///     fn into_html(self) -> impl IntoHtml {
-    ///         article!(
-    ///             h1!(self.title),
-    ///             p!(class = "content", self.content),
-    ///             footer!("Written by ", self.author)
-    ///         )
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// Chain multiple implementations through delegation:
-    ///
-    /// ```
-    /// # use vy::*;
-    /// # struct Article;
-    /// # impl IntoHtml for Article {
-    /// #     fn into_html(self) -> impl IntoHtml {}
-    /// # }
-    /// struct ArticlePage {
-    ///     title: String,
-    ///     articles: Vec<Article>,
-    /// }
-    ///
-    /// impl IntoHtml for ArticlePage {
-    ///     fn into_html(self) -> impl IntoHtml {
-    ///         html!(head!(title!(self.title)), body!(self.articles))
-    ///     }
-    /// }
-    /// ```
-    ///
-    /// For "leaf" types (elements that render directly without children, like
-    /// primitive values), **always return `self`** to avoid infinite recursion:
-    ///
-    /// ```
-    /// # use vy::{prelude::*, escape::escape_into};
-    /// struct TextNode(String);
-    ///
-    /// impl IntoHtml for TextNode {
-    ///     fn into_html(self) -> impl IntoHtml {
-    ///         // Leaf type returns itself to terminate the rendering chain
-    ///         self
-    ///     }
-    ///
-    ///     fn escape_and_write(self, buf: &mut String) {
-    ///         escape_into(buf, &self.0);
-    ///     }
-    ///
-    ///     fn size_hint(&self) -> usize {
-    ///         self.0.len()
-    ///     }
-    /// }
-    /// ```
-    fn into_html(self) -> impl IntoHtml;
+pub trait IntoHtml<T: IntoHtml = Self> {
+    fn into_html(self) -> T;
 
-    /// Writes the HTML into the provided [`String`].
+    #[inline]
+    fn peek(&self) -> Option<T> {
+        None
+    }
+
     #[inline]
     fn escape_and_write(self, buf: &mut String)
     where
@@ -100,31 +25,24 @@ pub trait IntoHtml {
 
     #[inline]
     fn size_hint(&self) -> usize {
-        0
-    }
-
-    /// Allocates a new [`String`] containing the HTML.
-    fn into_string(self) -> String
-    where
-        Self: Sized,
-    {
-        let html = self.into_html();
-        let size = html.size_hint();
-        let mut buf = String::with_capacity(size + (size / 10));
-        html.escape_and_write(&mut buf);
-        buf
+        self.peek().map(|inner| inner.size_hint()).unwrap_or(0)
     }
 }
 
 impl IntoHtml for &str {
     #[inline]
-    fn into_html(self) -> impl IntoHtml {
+    fn into_html(self) -> Self {
         self
     }
 
     #[inline]
+    fn peek(&self) -> Option<Self> {
+        Some(self)
+    }
+
+    #[inline]
     fn escape_and_write(self, buf: &mut String) {
-        escape_into(buf, self)
+        buf.push_str(self); // TODO: escape
     }
 
     #[inline]
@@ -133,60 +51,9 @@ impl IntoHtml for &str {
     }
 }
 
-impl IntoHtml for char {
+impl IntoHtml<&'static str> for bool {
     #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        escape_into(buf, self.encode_utf8(&mut [0; 4]));
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        self.len_utf8()
-    }
-}
-
-impl IntoHtml for String {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        escape_into(buf, &self)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        self.len()
-    }
-}
-
-impl IntoHtml for &String {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        escape_into(buf, self)
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        self.len()
-    }
-}
-
-impl IntoHtml for bool {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
+    fn into_html(self) -> &'static str {
         if self {
             "true"
         } else {
@@ -195,230 +62,44 @@ impl IntoHtml for bool {
     }
 
     #[inline]
-    fn size_hint(&self) -> usize {
-        5
+    fn peek(&self) -> Option<&'static str> {
+        Some(self.into_html())
     }
 }
 
-impl<T: IntoHtml> IntoHtml for Option<T> {
+impl IntoHtml for String {
     #[inline]
-    fn into_html(self) -> impl IntoHtml {
+    fn into_html(self) -> Self {
         self
     }
 
     #[inline]
     fn escape_and_write(self, buf: &mut String) {
-        if let Some(x) = self {
-            x.escape_and_write(buf)
-        }
+        self.as_str().escape_and_write(buf);
     }
 
     #[inline]
     fn size_hint(&self) -> usize {
-        if let Some(x) = self {
-            x.size_hint()
-        } else {
-            0
-        }
+        self.len()
     }
 }
 
-impl IntoHtml for () {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
+// impl<T: IntoHtml> IntoHtml<T> for core::iter::T {}
 
-    #[inline]
-    fn escape_and_write(self, _: &mut String) {}
-}
+struct MyT {}
 
-impl<F: FnOnce(&mut String)> IntoHtml for F {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        (self)(buf)
-    }
-}
-
-impl<B: IntoHtml, I: ExactSizeIterator, F> IntoHtml for core::iter::Map<I, F>
-where
-    F: FnMut(I::Item) -> B,
-{
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        let len = self.len();
-        for (i, x) in self.enumerate() {
-            if i == 0 {
-                buf.reserve(len * x.size_hint());
-            }
-            x.escape_and_write(buf);
-        }
-    }
-}
-
-impl<T: IntoHtml> IntoHtml for alloc::vec::Vec<T> {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        for x in self {
-            x.escape_and_write(buf);
-        }
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        let mut n = 0;
-        for x in self {
-            n += x.size_hint();
-        }
-        n
-    }
-}
-
-impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        for x in self {
-            x.escape_and_write(buf);
-        }
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        let mut n = 0;
-        for x in self {
-            n += x.size_hint();
-        }
-        n
-    }
-}
-
-impl<'a> IntoHtml for alloc::borrow::Cow<'a, str> {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
-        escape_into(buf, self.as_ref())
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        self.as_ref().len()
-    }
-}
-impl IntoHtml for core::net::Ipv4Addr {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        alloc::format!("{self}")
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        15
-    }
-}
-
-impl IntoHtml for core::net::Ipv6Addr {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        alloc::format!("{self}")
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        39
-    }
-}
-
-impl IntoHtml for core::net::IpAddr {
-    #[inline]
-    fn into_html(self) -> impl IntoHtml {
-        alloc::format!("{self}")
-    }
-
-    #[inline]
-    fn size_hint(&self) -> usize {
-        match self {
-            Self::V4(_) => 15,
-            Self::V6(_) => 39,
-        }
+impl IntoHtml<impl IntoHtml> for MyT {
+    fn into_html(self) -> Self {
+        todo!()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
+    use crate::IntoHtml;
 
     #[test]
-    fn test_impl_cow_str() {
-        use alloc::borrow::Cow;
-
-        assert_eq!(
-            <Cow<'static, str> as IntoHtml>::into_string(Cow::Borrowed(
-                "borrowed"
-            )),
-            "borrowed"
-        );
-        assert_eq!(
-            <Cow<'static, str> as IntoHtml>::into_string(Cow::Owned(
-                String::from("owned")
-            )),
-            "owned"
-        );
-    }
-
-    #[test]
-    fn test_impl_ipv4addr() {
-        use core::net::Ipv4Addr;
-
-        let addr_str = "255.255.255.255";
-        let addr: Ipv4Addr = addr_str.parse().unwrap();
-        assert_eq!(addr.into_string(), addr_str);
-        assert_eq!(addr.size_hint(), 15);
-    }
-
-    #[test]
-    fn test_impl_ipv6addr() {
-        use core::net::Ipv6Addr;
-
-        let addr_str = "ffff:ffff:ffff:ffff:ffff:ffff:ffff:ffff";
-        let addr: Ipv6Addr = addr_str.parse().unwrap();
-        assert_eq!(addr.into_string(), addr_str);
-        assert_eq!(addr.size_hint(), 39);
-    }
-
-    #[test]
-    fn test_impl_ipaddr() {
-        use core::net::IpAddr;
-
-        let addr_str = "127.0.0.1";
-        let ipv4: IpAddr = addr_str.parse().unwrap();
-        assert_eq!(ipv4.into_string(), addr_str);
-
-        let addr_str = "::1";
-        let ipv6: IpAddr = addr_str.parse().unwrap();
-        assert_eq!(ipv6.into_string(), addr_str);
+    fn it_works() {
+        assert_eq!(5, false.size_hint());
     }
 }
