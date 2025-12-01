@@ -1,10 +1,10 @@
 [package]
 name = "vy-core"
-version = "0.2.0"
-edition = "2021"
+version = "0.3.0"
+edition = "2024"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = """
-A convenient and type-safe HTML templating library.
+Small, simple and fast HTML templating library.
 """
 repository = "https://github.com/JonahLund/vy"
 keywords = ["html", "macros", "template"]
@@ -14,6 +14,7 @@ workspace = "../"
 
 [features]
 std = []
+nightly = []
 
 [dependencies]
 itoap = "1.0.1"

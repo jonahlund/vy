@@ -1,24 +1,30 @@
-
 [package]
 name = "vy"
-version = "0.2.0"
-edition = "2021"
+version = "0.3.0"
+edition = "2024"
 authors = ["Jonah Lund <jonahlund@proton.me>"]
 description = """
-A convenient and type-safe HTML templating library.
+Small, simple and fast HTML templating library.
 """
 repository = "https://github.com/JonahLund/vy"
 keywords = ["html", "macros", "template"]
 categories = ["template-engine", "web-programming"]
 license = "MIT"
+
 [workspace]
 resolver = "2"
 members = ["core", "macros"]
 
 [features]
-default = ["std"]
+default = ["std", "well-known"]
 std = ["vy-core/std"]
+nightly = ["vy-core/nightly"]
+
+well-known = ["vy-macros/well-known"]
+well-known-alpinejs = ["well-known"]
+well-known-htmx = ["well-known"]
+well-known-svg = ["well-known"]
 
 [dependencies]
-vy-core = { path = "./core", version = "0.2.0" }
-vy-macros = { path = "./macros", version = "0.2.0" }
+vy-core = { path = "./core", version = "0.3.0" }
+vy-macros = { path = "./macros", version = "0.3.0" }
