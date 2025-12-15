@@ -3,6 +3,7 @@ style_edition = "2021"
 imports_granularity = "Crate"
 group_imports = "StdExternalCrate"
 max_width = 80
+tab_spaces = 4
 reorder_imports = true
 reorder_impl_items = true
 wrap_comments = true

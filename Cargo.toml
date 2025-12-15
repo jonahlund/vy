@@ -13,17 +13,17 @@ license = "MIT"
 
 [workspace]
 resolver = "2"
-members = ["core", "macros"]
+members = ["core", "macros", "xtask"]
 
 [features]
-default = ["std", "well-known"]
+default = ["std", "well-known-html5"]
 std = ["vy-core/std"]
 nightly = ["vy-core/nightly"]
 
-well-known = ["vy-macros/well-known"]
-well-known-alpinejs = ["well-known"]
-well-known-htmx = ["well-known"]
-well-known-svg = ["well-known"]
+well-known-html5 = ["vy-macros/well-known-html5"]
+well-known-svg = ["vy-macros/well-known-svg"]
+well-known-alpinejs = ["well-known-html5"]
+well-known-htmx = ["well-known-html5"]
 
 [dependencies]
 vy-core = { path = "./core", version = "0.3.0" }

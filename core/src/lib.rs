@@ -10,6 +10,8 @@ extern crate std;
 
 use alloc::string::String;
 
+use crate::escape::escape_into;
+
 /// A type that can be represented as HTML.
 pub trait IntoHtml: Sized {
     type Into: IntoHtml;
@@ -46,12 +48,31 @@ impl IntoHtml for &str {
 
     #[inline]
     fn escape_and_write(self, buf: &mut String) {
-        escape::escape_into(buf, self)
+        escape_into(buf, self)
     }
 
     #[inline]
     fn size_hint(&self) -> usize {
         self.len()
+    }
+}
+
+impl IntoHtml for char {
+    type Into = Self;
+
+    #[inline]
+    fn into_html(self) -> Self {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
+        escape_into(buf, self.encode_utf8(&mut [0; 4]));
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        self.len_utf8()
     }
 }
 
@@ -132,41 +153,174 @@ where
     #[inline]
     fn escape_and_write(mut self, buf: &mut String) {
         let len = self.len();
-        let x = self.next();
-        buf.reserve(len * x.size_hint());
+        let first = self.next();
+        buf.reserve(len * first.size_hint());
+        first.escape_and_write(buf);
         for x in self {
             x.escape_and_write(buf);
         }
     }
 }
 
-impl<A: IntoHtml, B: IntoHtml> IntoHtml for (A, B) {
-    type Into = (A::Into, B::Into);
+macro_rules! impl_tuple {
+	( ( $($i:ident,)+ ) ) => {
+		impl<$($i,)+> IntoHtml for ($($i,)+)
+		where
+			$($i: IntoHtml,)+
+		{
+		    #[allow(unused_parens)]
+		    type Into = ($( $i::Into ),+ );
+
+            #[inline]
+            fn into_html(self) -> Self::Into {
+				#[allow(non_snake_case)]
+				let ($($i,)+) = self;
+				($( $i.into_html() ),+)
+            }
+
+            #[inline]
+			fn escape_and_write(self, buf: &mut String) {
+			    buf.reserve(self.size_hint());
+				#[allow(non_snake_case)]
+				let ($($i,)+) = self;
+				$(
+					$i.escape_and_write(buf);
+				)+
+			}
+
+            #[inline]
+            fn size_hint(&self) -> usize {
+				#[allow(non_snake_case)]
+				let ($($i,)+) = self;
+                let mut n = 0;
+				$(
+					n += $i.size_hint();
+				)+
+                n
+            }
+		}
+	};
+	($f:ident) => {
+		impl_tuple!(($f,));
+	};
+	($f:ident $($i:ident)+) => {
+		impl_tuple!(($f, $($i,)+));
+		impl_tuple!($($i)+);
+	};
+}
+
+impl_tuple!(A B C D E F G H I J K L M N O P Q R S T U V W X Y Z);
+
+macro_rules! via_itoa {
+    ($($ty:ty)*) => {
+        $(
+            impl $crate::IntoHtml for $ty {
+                type Into = Self;
+
+                #[inline]
+                fn into_html(self) -> Self::Into {
+                    self
+                }
+
+                #[inline]
+                fn escape_and_write(self, buf: &mut String) {
+                    itoap::write_to_string(buf, self);
+                }
+            }
+        )*
+    };
+}
+
+macro_rules! via_ryu {
+    ($($ty:ty)*) => {
+        $(
+            impl $crate::IntoHtml for $ty {
+                type Into = Self;
+
+                #[inline]
+                fn into_html(self) -> Self::Into {
+                    self
+                }
+
+                #[inline]
+                fn escape_and_write(self, buf: &mut String) {
+                    buf.push_str(ryu::Buffer::new().format(self));
+                }
+            }
+        )*
+    };
+}
+
+via_itoa! {
+    isize i8 i16 i32 i64 i128
+    usize u8 u16 u32 u64 u128
+}
+
+via_ryu! { f32 f64 }
+
+impl IntoHtml for () {
+    type Into = Self;
 
     #[inline]
     fn into_html(self) -> Self::Into {
-        (self.0.into_html(), self.1.into_html())
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, _: &mut String) {}
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        0
+    }
+}
+
+impl<T: IntoHtml> IntoHtml for alloc::vec::Vec<T> {
+    type Into = Self;
+
+    #[inline]
+    fn into_html(self) -> Self::Into {
+        self
     }
 
     #[inline]
     fn escape_and_write(self, buf: &mut String) {
-        buf.reserve(self.size_hint());
-        self.0.escape_and_write(buf);
-        self.1.escape_and_write(buf);
+        for x in self {
+            x.escape_and_write(buf);
+        }
     }
 
     #[inline]
     fn size_hint(&self) -> usize {
-        self.0.size_hint() + self.1.size_hint()
+        let mut n = 0;
+        for x in self {
+            n += x.size_hint();
+        }
+        n
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use crate::IntoHtml;
+impl<T: IntoHtml, const N: usize> IntoHtml for [T; N] {
+    type Into = Self;
 
-    #[test]
-    fn it_works() {
-        assert_eq!(5, (false, true).size_hint());
+    #[inline]
+    fn into_html(self) -> Self::Into {
+        self
+    }
+
+    #[inline]
+    fn escape_and_write(self, buf: &mut String) {
+        for x in self {
+            x.escape_and_write(buf);
+        }
+    }
+
+    #[inline]
+    fn size_hint(&self) -> usize {
+        let mut n = 0;
+        for x in self {
+            n += x.size_hint();
+        }
+        n
     }
 }

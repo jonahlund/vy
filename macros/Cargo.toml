@@ -16,9 +16,11 @@ workspace = "../"
 proc-macro = true
 
 [features]
-well-known = []
+well-known-html5 = []
+well-known-svg = []
 
 [dependencies]
+heck = "0.5.0"
 proc-macro2 = "1"
 quote = "1"
 syn = { version = "2", features = ["full"] }

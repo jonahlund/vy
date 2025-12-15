@@ -1,58 +1,58 @@
-use std::collections::HashMap;
+extern crate self as vy;
 
-use vy_core::IntoHtml;
-
-#[cfg(feature = "well-known")]
+pub mod builtin;
+#[macro_use]
 pub mod well_known;
 
-struct OptionalAttribute();
+pub use builtin::{
+    Attribute, Either, Either3, Either4, Either5, Either6, Either7, Either8,
+    Either9, OptionalAttribute, SpreadAttributes,
+};
+pub use vy_core::{IntoHtml, PreEscaped};
+pub use vy_macros::_compile;
 
-struct SpreadAttributes<
-    K: IntoHtml,
-    V: IntoHtml,
-    I: IntoIterator<Item = (K, V)>,
->(pub I);
-
-/// Acts as a group for child elements.
-///
-/// This can be used in cases where a tuple may reach the maximum length or for
-/// general performance increase.
 #[macro_export]
-macro_rules! _frag {
-    ($($x:expr),*) => {{}};
+macro_rules! _tag {
+    (@diagnostic $($tt:tt)*) => {};
+    ($($tt:tt)*) => {
+        $crate::_compile!(_tag!($($tt)*))
+    };
 }
 
 #[macro_export]
 macro_rules! _void_tag {
-    ($name:literal) => {};
-}
-
-#[macro_export]
-macro_rules! _tag {
-    ($name:literal) => {
-        const _: () = {
-
-        }
+    (@diagnostic $($tt:tt)*) => {};
+    ($($tt:tt)*) => {
+        $crate::_compile!(_void_tag!($($tt)*))
     };
 }
 
 #[macro_export]
-macro_rules! div {
-    ($($x:expr),*) => {
-        $crate::_tag!("div", $($x),*)
+macro_rules! _frag {
+    (@diagnostic $($tt:tt)*) => {};
+    ($($tt:tt)*) => {
+        $crate::_compile!($($tt)*)
     };
 }
 
 #[macro_export]
-macro_rules! input {
-    ($($x:expr),*) => {
-        $crate::_void_tag!("input", $($x),*)
+macro_rules! _if {
+    (@diagnostic $($tt:tt)*) => {};
+    ($($tt:tt)*) => {
+        $crate::_compile!(if $($tt)*)
     };
 }
 
-fn t() {
-    let mut map = HashMap::new();
-    map.insert("abc", "123");
+#[macro_export]
+macro_rules! _match {
+    (@diagnostic $($tt:tt)*) => {};
+    ($($tt:tt)*) => {
+        $crate::_compile!(match $($tt)*)
+    };
+}
 
-    SpreadAttributes(map);
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn it_works() {}
 }

@@ -17,7 +17,7 @@ std = []
 nightly = []
 
 [dependencies]
-itoap = "1.0.1"
+itoap = "1"
 ryu = "1"
 
 [dev-dependencies]
