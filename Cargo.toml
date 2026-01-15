@@ -13,10 +13,10 @@ license = "MIT"
 
 [workspace]
 resolver = "2"
-members = ["core", "macros", "xtask"]
+members = ["core", "macros"]
 
 [features]
-default = ["std", "well-known-html5"]
+default = ["std", "well-known-html5", "well-known-alpinejs"]
 std = ["vy-core/std"]
 nightly = ["vy-core/nightly"]
 

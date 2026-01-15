@@ -2,29 +2,8 @@
 name = "vy-macros"
 version = "0.3.0"
 edition = "2024"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = """
-Small, simple and fast HTML templating library.
-"""
-repository = "https://github.com/JonahLund/vy"
-keywords = ["html", "macros", "template"]
-categories = ["template-engine", "web-programming"]
-license = "MIT"
-workspace = "../"
 
 [lib]
 proc-macro = true
 
-[features]
-well-known-html5 = []
-well-known-svg = []
-
 [dependencies]
-heck = "0.5.0"
-proc-macro2 = "1"
-quote = "1"
-syn = { version = "2", features = ["full"] }
-vy-core = { path = "../core", version = "0.3.0" }
-
-[dev-dependencies]
-vy = { path = "../" }
