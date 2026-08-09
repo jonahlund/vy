@@ -2,13 +2,9 @@
 name = "vy"
 version = "0.3.0"
 edition = "2024"
-authors = ["Jonah Lund <jonahlund@proton.me>"]
-description = """
-Small, simple and fast HTML templating library.
-"""
+authors = ["Jonah Lund <jonahlund@tuta.io>"]
+description = "Write HTML with simple macros"
 repository = "https://github.com/JonahLund/vy"
-keywords = ["html", "macros", "template"]
-categories = ["template-engine", "web-programming"]
 license = "MIT"
 
 [workspace]
@@ -16,14 +12,9 @@ resolver = "2"
 members = ["core", "macros"]
 
 [features]
-default = ["std", "well-known-html5", "well-known-alpinejs"]
+default = ["std"]
 std = ["vy-core/std"]
 nightly = ["vy-core/nightly"]
-
-well-known-html5 = ["vy-macros/well-known-html5"]
-well-known-svg = ["vy-macros/well-known-svg"]
-well-known-alpinejs = ["well-known-html5"]
-well-known-htmx = ["well-known-html5"]
 
 [dependencies]
 vy-core = { path = "./core", version = "0.3.0" }

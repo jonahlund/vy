@@ -2,8 +2,16 @@
 name = "vy-macros"
 version = "0.3.0"
 edition = "2024"
+authors = ["Jonah Lund <jonahlund@tuta.io>"]
+description = "Write HTML with simple macros"
+repository = "https://github.com/JonahLund/vy"
+license = "MIT"
 
 [lib]
 proc-macro = true
 
 [dependencies]
+vy-core = { path = "../core", version = "0.3.0" }
+proc-macro2 = "1.0.107"
+quote = "1.0.47"
+syn = "3.0.3"

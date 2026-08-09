@@ -1,6 +1,6 @@
 use alloc::string::String;
 
-use crate::IntoHtml;
+use crate::ToHtml;
 
 #[inline]
 pub const fn escape_char(ch: char) -> Option<&'static str> {
@@ -37,16 +37,9 @@ pub fn escape(input: &str) -> String {
 /// A type that requires no further escaping.
 pub struct PreEscaped<T>(pub T);
 
-impl<T: AsRef<str>> IntoHtml for PreEscaped<T> {
-    type Into = Self;
-
+impl<T: AsRef<str>> ToHtml for PreEscaped<T> {
     #[inline]
-    fn into_html(self) -> Self {
-        self
-    }
-
-    #[inline]
-    fn escape_and_write(self, buf: &mut String) {
+    fn escape_and_write(&self, buf: &mut String) {
         buf.push_str(self.0.as_ref());
     }
 

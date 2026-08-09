@@ -1,28 +1,27 @@
 extern crate self as vy;
 
-pub use vy_core::{IntoHtml, PreEscaped};
-pub use vy_macros::_compile;
+pub use vy_core::{PreEscaped, ToHtml};
+pub use vy_macros::vy;
 
-#[macro_export]
-macro_rules! _tag {
-    (@diagnostic $($tt:tt)*) => {};
-    ($($tt:tt)*) => {
-        $crate::_compile!(_tag!($($tt)*))
-    };
-}
+#[doc(hidden)]
+#[allow(non_camel_case_types)]
+pub mod __private {
+    pub struct div;
+    pub struct input;
 
-#[macro_export]
-macro_rules! _void_tag {
-    (@diagnostic $($tt:tt)*) => {};
-    ($($tt:tt)*) => {
-        $crate::_compile!(_void_tag!($($tt)*))
-    };
-}
+    #[macro_export]
+    macro_rules! div {
+        (@__vy_macro) => {};
+        ($($tt:tt)*) => {
+            $crate::vy!(div!($($tt)*))
+        }
+    }
 
-async fn get_user() {}
-
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {}
+    #[macro_export]
+    macro_rules! input {
+        (@__vy_macro) => {};
+        ($($tt:tt)*) => {
+            $crate::vy!(input!($($tt)*))
+        }
+    }
 }
